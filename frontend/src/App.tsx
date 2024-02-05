@@ -9,7 +9,7 @@ export default function App() {
 		<MantineProvider>
 			<WalletContextProviderComponent>
 				<AppShell
-					bg={"linear-gradient(rgba(255,0,255,0.01),rgba(180,0,1,0.5))"}
+					bg={"linear-gradient(rgba(255,0,255,0.01), #7cc15e)"}
 					withBorder
 				>
 					<AppShell.Main>

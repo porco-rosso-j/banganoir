@@ -53,6 +53,13 @@ const useSponsored4337Tx = (onOpen: () => void) => {
 
 		let ret: txResult = empTxResult;
 
+		/*
+
+		const root = await generateOTPProof("0", "0", "0", [], "0", "0");
+		console.log("root: ", root);
+		console.log("root: ", root);
+		*/
+
 		console.log("ret: ", ret);
 		if (ret.result) {
 			setResult(true);

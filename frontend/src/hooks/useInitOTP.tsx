@@ -1,25 +1,34 @@
 import { useEffect, useState } from "react";
 import { useWalletContext } from "../contexts/useWalletContext";
-import { ethers } from "ethers";
-import { wallet as sponsor } from "../utils/constants";
-import AccFacArtifact from "../utils/artifacts/AccountFactory.json";
-import { NoirOTP, generateOTPProof } from "@porco/noir-otp-lib";
+import { accFacContract } from "../utils/constants";
+import { NoirOTP } from "@porco/noir-otp-lib";
 import { authenticator } from "@otplib/preset-browser";
 
-const facAddr = "0xa527e0029e720D5f31c8798DF7b107Fad54f40E6";
+import { Noir, ProofData, CompiledCircuit } from "@noir-lang/noir_js";
+import { BarretenbergBackend } from "@noir-lang/backend_barretenberg";
+import otpCircuit from "./otp.json"; // should be moved to otp-lib
+
 // instantiate otp contract
-const accFacContract = new ethers.Contract(
-	facAddr,
-	AccFacArtifact.abi,
-	sponsor
-);
 
 const loadingMsgs = ["pre-generating otp...", "deploying wallet..."];
 
-export default function useInitOTP() {
-	const { accountAddress } = useWalletContext();
+type InitOTPResult = {
+	noirOTP: NoirOTP;
+	root: string;
+};
 
-	console.log("sponsor: ", sponsor);
+// type useInitOTP = {
+// 	noirOTP: NoirOTP;
+// 	handleNoirOTP: (noirOTP: NoirOTP) => void;
+// };
+
+export default function useInitOTP(
+	noirOTP: NoirOTP | undefined,
+	handleNoirOTP: (noirOTP: NoirOTP) => void,
+	root: string,
+	setRoot: (root: string) => void
+) {
+	// const { accountAddress, saveAccountAddress } = useWalletContext();
 
 	const [loading, setLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
@@ -30,6 +39,7 @@ export default function useInitOTP() {
 	const [result, setResult] = useState<boolean>(false);
 
 	const [qrCode, setQRCode] = useState<string>("");
+	const [qrVerified, setQRVerified] = useState<boolean>(false);
 
 	useEffect(() => {
 		if (loading && loadingMessageId !== 0) {
@@ -43,7 +53,7 @@ export default function useInitOTP() {
 		}
 	});
 
-	async function initOTP(user: string) {
+	async function initOTP(user: string): Promise<InitOTPResult> {
 		setErrorMessage("");
 		setLoading(true);
 		setLoadingMessageId(1);
@@ -53,47 +63,75 @@ export default function useInitOTP() {
 		const auth = authenticator;
 		console.log("auth: ", auth);
 		//const noirOTP = new NoirOTP(authenticator);
-		const noirOTP = new NoirOTP(authenticator);
-		console.log("noirOTP: ", noirOTP.authenticator);
-		console.log("noirOTP: ", noirOTP.secret);
-		// const root = await noirOTP.generateOTPNodesAndRoot();
-		// console.log("root: ", root);
 
-		// const root = await generateOTPProof("0", "0", "0", [], "0", "0");
-		// console.log("root: ", root);
-		// console.log("root: ", root);
+		const program = otpCircuit as CompiledCircuit;
+		const backend = new BarretenbergBackend(program, { threads: 8 });
+		console.log("backend: ", backend);
+		const noir = new Noir(program, backend);
+		console.log("noir: ", noir);
+
+		const noirOTP = new NoirOTP(noir, authenticator);
+		console.log("noirOTP: ", noirOTP.authenticator);
+		console.log("noirOTP: ", noirOTP);
+		handleNoirOTP(noirOTP);
 
 		const root = await noirOTP.initialize();
 		console.log("root: ", root);
-		console.log("root: ", root);
+		setRoot(root);
 
-		const qr = await noirOTP.getQRCode("poro");
+		const qr = await noirOTP.getQRCode(user);
 		console.log("qr: ", qr);
 		setQRCode(qr);
 		console.log("qrCode: ", qrCode);
 
 		// store them in local storage
-
+		// setNoirOTP(noirOTP);
 		setLoading(false);
+		return { noirOTP, root };
 	}
 
-	async function verifyOTP(otp: number) {
-		setErrorMessage("");
-		setLoading(true);
-		// deploy wallet
+	async function verifyOTP(otp: string): Promise<boolean> {
+		if (noirOTP) {
+			noirOTP.updateEpoch();
 
-		setLoading(false);
+			if (noirOTP.verifyOTP(otp)) {
+				console.log("otp: ", otp);
+				setQRVerified(true);
+				return true;
+			} else {
+				setQRVerified(false);
+				return false;
+			}
+		} else {
+			console.log("noirOTP undefined ");
+			return false;
+		}
 	}
 
-	async function deployAccount(params: any) {
-		setErrorMessage("");
-		setLoading(true);
-		// deploy wallet
-		const tx = await accFacContract.createAccount();
-		const result = await tx.wait();
-		console.log("result: ", result);
+	// async function deployAccount(
+	// 	noirOTP: NoirOTP,
+	// 	root: string
+	// ): Promise<string> {
+	async function deployAccount(): Promise<string> {
+		let accAddr = "";
+		if (noirOTP && root) {
+			try {
+				accAddr = await accFacContract.getAccountAddress(root, noirOTP.step, 0);
+				console.log("accAddr: ", accAddr);
 
-		setLoading(false);
+				console.log("root: ", root);
+				console.log("noirOTP.step: ", noirOTP.step);
+
+				// deploy wallet
+				const tx = await accFacContract.createAccount(root, noirOTP.step, 0);
+				console.log("tx: ", tx);
+				const result = await tx.wait();
+				console.log("result: ", result);
+			} catch (e) {
+				console.log("e: ", e);
+			}
+		}
+		return accAddr;
 	}
 
 	return {
@@ -103,6 +141,7 @@ export default function useInitOTP() {
 		txHash,
 		result,
 		qrCode,
+		qrVerified,
 		setQRCode,
 		setErrorMessage,
 		initOTP,

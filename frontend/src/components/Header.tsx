@@ -10,7 +10,7 @@ export default function Header() {
 				ml={35}
 				style={{ color: "black", fontFamily: "Verdana, sans-serif" }}
 			>
-				AadhaarOTP Wallet
+				Banganoir
 			</Text>
 			<Button
 				onClick={removeAddresses}

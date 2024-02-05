@@ -2,7 +2,7 @@
     "name": "@porco/noir-otp-lib",
     "version": "1.0.0",
     "type": "module",
-    "main": "./dist/browser/index.js",
+    "main": "./dist/index.js",
     "scripts": {
         "build": "yarn cache clean && rm -r dist && tsc -p tsconfig.build.json"
     },

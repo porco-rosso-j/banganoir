@@ -16,6 +16,6 @@
 		"baseUrl": "./",
 		"outDir": "./dest"
 	},
-	"include": ["src", "test"],
+	"include": ["src"],
 	"exclude": ["node_modules"]
 }

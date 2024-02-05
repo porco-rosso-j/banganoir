@@ -36,7 +36,7 @@ contract AccountFactory is Ownable {
         uint16 _step,
         uint256 salt
     ) public returns (Account ret) {
-        address addr = getAddress(_merkleRoot, _step, salt);
+        address addr = getAccountAddress(_merkleRoot, _step, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
             return Account(payable(addr));
@@ -57,7 +57,7 @@ contract AccountFactory is Ownable {
     /**
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
-    function getAddress(
+    function getAccountAddress(
         bytes32 _merkleRoot,
         uint16 _step,
         uint256 salt

@@ -15,4 +15,4 @@ libs = ["lib"]
 [rpc_endpoints]
 localhost="http://localhost:8545"
 scroll="https://goerli.infura.io/v3/${ALCHEMY_API_KEY_GOERLI}"
-scroll-sepolia="https://rpc.ankr.com/scroll_sepolia_testnet"
+scroll-sepolia="https://sepolia-rpc.scroll.io/"
