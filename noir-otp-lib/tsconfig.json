@@ -8,12 +8,14 @@
 		"strict": false,
 		"forceConsistentCasingInFileNames": true,
 		"noFallthroughCasesInSwitch": true,
-		"module": "CommonJS",
+		"module": "ESNext",
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
 		"isolatedModules": false,
-		"noEmit": true,
-		"baseUrl": "."
+		"declaration": true,
+		"baseUrl": "./",
+		"outDir": "./dest"
 	},
-	"include": ["scripts"]
+	"include": ["src", "test"],
+	"exclude": ["node_modules"]
 }

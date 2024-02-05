@@ -6,3 +6,5 @@ node_modules
 out
 note.md
 .env
+
+frontend/dist

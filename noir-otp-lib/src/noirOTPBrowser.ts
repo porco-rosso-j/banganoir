@@ -1,48 +1,53 @@
-import { authenticator } from "otplib";
-import { Authenticator, AuthenticatorOptions } from "@otplib/core";
-import { MerkleTree } from "./utils/merkle";
-import { pedersenHash } from "./utils/pedersen";
-import QRCode from "qrcode";
+// import { authenticator } from "otplib";
+// import type { Authenticator } from "@otplib/preset-browser";
+// import { Authenticator, AuthenticatorOptions } from "@otplib/core";
+import { Noir, ProofData, CompiledCircuit } from "@noir-lang/noir_js";
+import { BarretenbergBackend } from "@noir-lang/backend_barretenberg";
 import { Fr } from "@aztec/bb.js";
-import { ProofData } from "@noir-lang/types";
-import {
-	BarretenbergBackend,
-	CompiledCircuit,
-} from "@noir-lang/backend_barretenberg";
-import otpCircuit from "../circuit/target/otp.json";
-import { Noir } from "@noir-lang/noir_js";
+import QRCode from "qrcode";
+import { MerkleTree, pedersenHash } from "./utils";
+//import otpCircuit from "./artifacts/otp.json" assert { type: "json" };
+import otpCircuit from "./artifacts/otp.json";
+
+declare global {
+	interface Window {
+		otplib: any;
+	}
+}
 
 export class NoirOTP {
 	secret: string;
 	step: number = 180; // 180 as default
 	period: number = 64; // 64 as default => 3.2hrs ((2^6) * 3hr / 60mins)
 	initial_epoch: number;
-	authenticator: Authenticator;
-	otpNodes: string[] = [];
+	authenticator: any = {} as any;
+	otpNodes: string[];
 
-	constructor(_step?: number, _period?: number) {
-		if (_step) {
-			this.step = _step;
-		}
-		if (_period) {
-			this.period = _period;
-		}
+	constructor(authenticator: any) {
+		this.secret = "";
+		this.initial_epoch = 0;
+		this.otpNodes = [];
+		this.authenticator = authenticator;
 	}
 
-	generateSecret() {
-		this.secret = authenticator.generateSecret();
+	async initialize() {
+		await this.initAuthenticator();
+		await this.generateSecret();
+		return await this.generateOTPNodesAndRoot();
 	}
 
-	initAuthenticator() {
+	async initAuthenticator() {
 		const current_epoch = Date.now();
 		this.initial_epoch = current_epoch;
 
-		authenticator.options = {
+		this.authenticator.options = {
 			epoch: current_epoch,
 			step: this.step,
-		} as AuthenticatorOptions;
+		};
+	}
 
-		this.authenticator = authenticator;
+	async generateSecret() {
+		this.secret = this.authenticator.generateSecret();
 	}
 
 	async generateOTPNodesAndRoot(): Promise<string> {
@@ -65,7 +70,7 @@ export class NoirOTP {
 			// console.log("otp_node; ", otp_nodes[i].toString());
 		}
 
-		//console.log("otp_nodes; ", otp_nodes);
+		console.log("otp_nodes; ", otp_nodes);
 		const merkle = new MerkleTree(calculateDepth(otp_nodes.length));
 		await merkle.initialize(otp_nodes);
 		return merkle.root().toString();
@@ -73,7 +78,7 @@ export class NoirOTP {
 
 	async getQRCode(_user_id: string): Promise<string> {
 		return await QRCode.toDataURL(
-			authenticator.keyuri(_user_id, "NoirOTP", this.secret)
+			this.authenticator.keyuri(_user_id, "NoirOTP", this.secret)
 		);
 	}
 
@@ -81,14 +86,10 @@ export class NoirOTP {
 		const timestep = this.calcuTimestep(_epoch);
 		// console.log("timestep; ", timestep);
 
-		// const otp = `0x${_otp.toString(16).padStart(6, "0")}`;
-		// const epoch = `0x${timestep.toString(16).padStart(6, "0")}`;
 		const otp = padAndConvertToHexStr(_otp);
 		const epoch = padAndConvertToHexStr(timestep);
-
 		// console.log("otp; ", otp);
 		// console.log("epoch; ", epoch);
-
 		return Fr.fromString(await pedersenHash([otp, epoch]));
 	}
 
@@ -118,8 +119,15 @@ export async function generateOTPProof(
 	timestep: string
 ): Promise<ProofData> {
 	const program = otpCircuit as CompiledCircuit;
-	const backend = new BarretenbergBackend(program);
+	console.log("program: ", program);
+
+	// const program = await loadOtpCircuit();
+	const backend = new BarretenbergBackend(program, { threads: 8 });
+	console.log("backend: ", backend);
+
+	// hereeee
 	const noir = new Noir(program, backend);
+	console.log("noir: ", noir);
 
 	const input = {
 		root: root,
@@ -138,7 +146,8 @@ export async function generateOTPProof(
 	// const result = await noir.verifyFinalProof(proof);
 	// console.log("result: ", result);
 
-	return proof;
+	// return proof;
+	return { proof: null, publicInputs: null };
 }
 
 export function calculateDepth(numLeaves: number): number {
@@ -149,17 +158,8 @@ export function padAndConvertToHexStr(value: number) {
 	return `0x${value.toString(16).padStart(6, "0")}`;
 }
 
-// export async function getNode(_otp: number, _epoch: number) {
-// 	const timestep = calcuTimestep(_epoch);
-// 	console.log("timestep; ", timestep);
-
-// 	// const otp = `0x${_otp.toString(16).padStart(6, "0")}`;
-// 	// const epoch = `0x${timestep.toString(16).padStart(6, "0")}`;
-// 	const otp = padAndConvertToHexStr(_otp);
-// 	const epoch = padAndConvertToHexStr(timestep);
-
-// 	console.log("otp; ", otp);
-// 	console.log("epoch; ", epoch);
-
-// 	return Fr.fromString(await pedersenHash([otp, epoch]));
-// }
+async function loadOtpCircuit() {
+	const circuit = await fetch("./artifacts/otp.json").then((res) => res.json());
+	console.log("circuit: ", circuit);
+	return circuit as CompiledCircuit;
+}

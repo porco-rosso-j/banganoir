@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "account-abstraction/core/BaseAccount.sol";
 import "account-abstraction/samples/callback/TokenCallbackHandler.sol";
-import "../otp/NoirOTP.sol";
+import "src/otp/NoirOTP.sol";
 
 contract Account is
     BaseAccount,

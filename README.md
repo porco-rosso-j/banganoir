@@ -4,8 +4,6 @@ NoirOTP is a zkTOTP(Time-based one-time password) scheme leveraging Noir, a DSL 
 
 ### Deploy
 
-run forked goerli chain
-
 ```shell
 forge script script/Deploy.s.sol:Deploy --rpc-url scroll-sepolia --broadcast --legacy
 ```

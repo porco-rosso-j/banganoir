@@ -1,6 +1,6 @@
 pragma solidity ^0.8.20;
 
-import {IUltraVerifier} from "../interfaces/IUltraVerifier.sol";
+import {IUltraVerifier} from "src/interfaces/IUltraVerifier.sol";
 
 contract NoirOTP {
     error PROOF_VERIFICATION_FAILED();
