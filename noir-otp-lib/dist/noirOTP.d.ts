@@ -15,14 +15,14 @@ export declare class NoirOTP {
     generateSecret(): Promise<void>;
     generateOTPNodesAndRoot(): Promise<string>;
     getQRCode(_user_id: string): Promise<string>;
-    getNode(_otp: number, _timestep: number): Promise<Fr>;
-    generateOTPProof(root: string, otp: number, otpNodes: string[]): Promise<ProofData>;
+    getNode(_otp: string, _timestep: number): Promise<Fr>;
+    generateOTPProof(root: string, otp: string, otpNodes: string[]): Promise<ProofData>;
     updateEpoch(): void;
     verifyOTP(_otp: string): boolean;
     calcuTimestep(_epoch: number): number;
 }
 export declare function getNullifier(leaf: string, otp: string, timestep: string): Promise<string>;
 export declare function getDepth(numLeaves: number): number;
-export declare function padToHexStr(value: number): string;
+export declare function padToHexStr(value: string): string;
 export declare function strToFrArray(array: string[]): Fr[];
 export declare function frToStrArray(array: Fr[]): string[];

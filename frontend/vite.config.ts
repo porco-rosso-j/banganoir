@@ -1,8 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
-import wasm from "vite-plugin-wasm";
-import topLevelAwait from "vite-plugin-top-level-await";
 // https://vitejs.dev/config/
 import copy from "rollup-plugin-copy";
 import fs from "fs";
@@ -28,16 +26,14 @@ export default defineConfig({
 	plugins: [
 		react(),
 		nodePolyfills(),
-		// wasm(),
-		// topLevelAwait(),
-		// copy({
-		// 	targets: [
-		// 		{ src: "node_modules/**/*.wasm", dest: "node_modules/.vite/dist" },
-		// 	],
-		// 	copySync: true,
-		// 	hook: "buildStart",
-		// }),
-		// wasmContentTypePlugin,
+		copy({
+			targets: [
+				{ src: "node_modules/**/*.wasm", dest: "node_modules/.vite/dist" },
+			],
+			copySync: true,
+			hook: "buildStart",
+		}),
+		wasmContentTypePlugin,
 	],
 	//plugins: [react()],
 	optimizeDeps: {

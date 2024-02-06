@@ -1,15 +1,27 @@
 import { useEffect, useState } from "react";
-import { Button, Container, Center, Text, Box } from "@mantine/core";
+import {
+	Button,
+	Container,
+	Center,
+	Text,
+	Box,
+	Stack,
+	Anchor,
+} from "@mantine/core";
 import { useWalletContext } from "../contexts/useWalletContext";
 import useInitOTP from "../hooks/useInitOTP";
 import QRCodeModal from "./Modals/QRCode";
 import DeploymentSteps from "./DeploymentSteps";
 import { NoirOTP } from "@porco/noir-otp-lib";
+import { shortenAddress } from "../utils/shortenAddr";
+import WalletPage from "./WalletPage";
 
 export default function Onboard() {
 	const [noirOTP, setNoirOTP] = useState<NoirOTP>();
 	const [root, setRoot] = useState<string>("");
+	const [accDeployedAddr, setDeployedAccAddr] = useState<string>("");
 	const [deployed, setDeployed] = useState(false);
+	const [isWalletOpen, setIsWalletOpen] = useState(false);
 
 	const handleNoirOTP = (noirOTP: NoirOTP) => {
 		setNoirOTP(noirOTP);
@@ -18,8 +30,7 @@ export default function Onboard() {
 	const { qrCode, qrVerified, setQRCode, initOTP, verifyOTP, deployAccount } =
 		useInitOTP(noirOTP, handleNoirOTP, root, setRoot);
 
-	const { accountAddress, moduleAddress, saveAccountAddress } =
-		useWalletContext();
+	const { accountAddress, saveAccountAddress } = useWalletContext();
 
 	const [loadingCreate, setLoadingCreate] = useState(false);
 	const [setupState, setSetupState] = useState(0);
@@ -28,6 +39,13 @@ export default function Onboard() {
 		if (qrVerified && !deployed) {
 			setSetupState(3);
 			handleDeploy();
+		}
+	});
+
+	useEffect(() => {
+		if (!accountAddress) {
+			const addr = localStorage.getItem("contract_address");
+			saveAccountAddress(addr ? JSON.parse(addr) : "");
 		}
 	});
 
@@ -44,13 +62,17 @@ export default function Onboard() {
 
 	async function handleDeploy() {
 		const accAddr = await deployAccount();
-		saveAccountAddress(accAddr);
+		// saveAccountAddress(accAddr);
+		setDeployedAccAddr(accAddr);
 		setDeployed(true);
 		setSetupState(5);
 		setLoadingCreate(false);
 	}
 
-	return (
+	console.log("isWalletOpen: ", isWalletOpen);
+	return isWalletOpen || accountAddress ? (
+		<WalletPage />
+	) : (
 		<>
 			<Container mt={100}>
 				<Box mb={50}>
@@ -78,30 +100,53 @@ export default function Onboard() {
 						funds.
 					</Text>
 				</Box>
-				{accountAddress && moduleAddress ? (
-					<Text style={{ textAlign: "center" }}>
-						A new wallet was successfully created! <br />
-						address: {accountAddress}
-					</Text>
-				) : (
-					<Center style={{ flexDirection: "column" }}>
-						<Button
-							style={{
-								textAlign: "center",
-								fontSize: "18px",
-							}}
-							color="green"
-							onClick={handleCreateAccount}
-							loading={loadingCreate}
-							disabled={setupState == 5 ? true : false}
-						>
-							Create wallet
-						</Button>
-					</Center>
-				)}
+				<Center style={{ flexDirection: "column" }}>
+					<Button
+						style={{
+							textAlign: "center",
+							fontSize: "18px",
+						}}
+						color="green"
+						onClick={handleCreateAccount}
+						loading={loadingCreate}
+						disabled={setupState == 5 ? true : false}
+					>
+						Create wallet
+					</Button>
+				</Center>
 			</Container>
-			<DeploymentSteps setupState={setupState} accountAddr={accountAddress} />
+			<DeploymentSteps setupState={setupState} accountAddr={accDeployedAddr} />
+			{setupState === 5 && accDeployedAddr !== "" ? (
+				<Center>
+					<Stack gap={30}>
+						<Text mr={5} style={{ fontSize: "17px" }}>
+							Address:{" "}
+							<Anchor
+								ml={2}
+								href={
+									"https://sepolia.scrollscan.com/address/" + accDeployedAddr
+								}
+								target="_blank"
+								rel="noopener noreferrer"
+								style={{ textDecoration: "underline" }}
+							>
+								{shortenAddress(accDeployedAddr)}
+							</Anchor>
+						</Text>
 
+						<Button
+							style={{ textAlign: "center" }}
+							color="blue"
+							onClick={() => {
+								setIsWalletOpen(true);
+								saveAccountAddress(accDeployedAddr);
+							}}
+						>
+							Go to Wallet Page
+						</Button>
+					</Stack>
+				</Center>
+			) : null}
 			{qrCode !== "" ? (
 				<QRCodeModal
 					qrCode={qrCode}

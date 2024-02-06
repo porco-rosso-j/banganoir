@@ -1,26 +1,8 @@
-import { useEffect, useState } from "react";
-import { useWalletContext } from "../contexts/useWalletContext";
-import { accFacContract } from "../utils/constants";
+import { useState } from "react";
+import { accFacContract, noir } from "../utils/constants";
 import { NoirOTP } from "@porco/noir-otp-lib";
 import { authenticator } from "@otplib/preset-browser";
-
-import { Noir, ProofData, CompiledCircuit } from "@noir-lang/noir_js";
-import { BarretenbergBackend } from "@noir-lang/backend_barretenberg";
-import otpCircuit from "./otp.json"; // should be moved to otp-lib
-
-// instantiate otp contract
-
-const loadingMsgs = ["pre-generating otp...", "deploying wallet..."];
-
-type InitOTPResult = {
-	noirOTP: NoirOTP;
-	root: string;
-};
-
-// type useInitOTP = {
-// 	noirOTP: NoirOTP;
-// 	handleNoirOTP: (noirOTP: NoirOTP) => void;
-// };
+import { storeOTPNodes } from "../utils/storeOTPNodes";
 
 export default function useInitOTP(
 	noirOTP: NoirOTP | undefined,
@@ -28,50 +10,16 @@ export default function useInitOTP(
 	root: string,
 	setRoot: (root: string) => void
 ) {
-	// const { accountAddress, saveAccountAddress } = useWalletContext();
-
-	const [loading, setLoading] = useState(false);
-	const [errorMessage, setErrorMessage] = useState<string>("");
-	const [loadingMessage, setLoadingMessage] = useState<string>("");
-	const [loadingMessageId, setLoadingMessageId] = useState<number>(0);
-
-	const [txHash, setTxHash] = useState<string>("");
-	const [result, setResult] = useState<boolean>(false);
-
 	const [qrCode, setQRCode] = useState<string>("");
 	const [qrVerified, setQRVerified] = useState<boolean>(false);
 
-	useEffect(() => {
-		if (loading && loadingMessageId !== 0) {
-			setLoadingMessage(loadingMsgs[loadingMessageId]);
-		}
-	});
-
-	useEffect(() => {
-		if (qrCode) {
-			setLoadingMessage(loadingMsgs[loadingMessageId]);
-		}
-	});
-
-	async function initOTP(user: string): Promise<InitOTPResult> {
-		setErrorMessage("");
-		setLoading(true);
-		setLoadingMessageId(1);
-
+	async function initOTP(user: string) {
 		// let authenticator = window.otplib.authenticator;
 		console.log("authenticator: ", authenticator);
 		const auth = authenticator;
 		console.log("auth: ", auth);
 		//const noirOTP = new NoirOTP(authenticator);
-
-		const program = otpCircuit as CompiledCircuit;
-		const backend = new BarretenbergBackend(program, { threads: 8 });
-		console.log("backend: ", backend);
-		const noir = new Noir(program, backend);
-		console.log("noir: ", noir);
-
 		const noirOTP = new NoirOTP(noir, authenticator);
-		console.log("noirOTP: ", noirOTP.authenticator);
 		console.log("noirOTP: ", noirOTP);
 		handleNoirOTP(noirOTP);
 
@@ -79,15 +27,12 @@ export default function useInitOTP(
 		console.log("root: ", root);
 		setRoot(root);
 
+		await storeOTPNodes(root, noirOTP.otpNodes);
+
 		const qr = await noirOTP.getQRCode(user);
 		console.log("qr: ", qr);
 		setQRCode(qr);
 		console.log("qrCode: ", qrCode);
-
-		// store them in local storage
-		// setNoirOTP(noirOTP);
-		setLoading(false);
-		return { noirOTP, root };
 	}
 
 	async function verifyOTP(otp: string): Promise<boolean> {
@@ -108,10 +53,6 @@ export default function useInitOTP(
 		}
 	}
 
-	// async function deployAccount(
-	// 	noirOTP: NoirOTP,
-	// 	root: string
-	// ): Promise<string> {
 	async function deployAccount(): Promise<string> {
 		let accAddr = "";
 		if (noirOTP && root) {
@@ -135,15 +76,9 @@ export default function useInitOTP(
 	}
 
 	return {
-		loading,
-		errorMessage,
-		loadingMessage,
-		txHash,
-		result,
 		qrCode,
 		qrVerified,
 		setQRCode,
-		setErrorMessage,
 		initOTP,
 		verifyOTP,
 		deployAccount,

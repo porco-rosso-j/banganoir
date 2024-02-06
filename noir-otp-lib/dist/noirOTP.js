@@ -47,7 +47,7 @@ export class NoirOTP {
             const otp = this.authenticator.generate(this.secret);
             // console.log("otp; ", otp);
             // console.log("epoch; ", next_epoch.toString());
-            otp_nodes[i] = await this.getNode(Number(otp), this.calcuTimestep(next_epoch));
+            otp_nodes[i] = await this.getNode(otp, this.calcuTimestep(next_epoch));
             this.otpNodes[i] = otp_nodes[i].toString();
             // console.log("otp_node; ", otp_nodes[i].toString());
         }
@@ -63,7 +63,7 @@ export class NoirOTP {
         // const timestep = this.calcuTimestep(_epoch);
         // console.log("timestep; ", timestep);
         const otp = padToHexStr(_otp);
-        const epoch = padToHexStr(_timestep);
+        const epoch = padToHexStr(_timestep.toString());
         // console.log("otp; ", otp);
         // console.log("epoch; ", epoch);
         return Fr.fromString(await pedersenHash([otp, epoch]));
@@ -72,9 +72,10 @@ export class NoirOTP {
         const otpNodesFr = strToFrArray(otpNodes);
         const merkle = new MerkleTree(getDepth(otpNodes.length));
         await merkle.initialize(otpNodesFr);
-        // const currentTime = Date.now();
+        console.log("merkle: ", merkle);
         const timestep = this.calcuTimestep(Date.now());
         const leaf = await this.getNode(otp, timestep);
+        console.log("leaf: ", leaf);
         const index = merkle.getIndex(leaf);
         console.log("index: ", index);
         const merkleProof = await merkle.proof(index);
@@ -82,7 +83,7 @@ export class NoirOTP {
         const hash_path = frToStrArray(merkleProof.pathElements);
         // hexilify otp and timestep
         const hexOTP = padToHexStr(otp);
-        const hexTimeStep = padToHexStr(timestep);
+        const hexTimeStep = padToHexStr(timestep.toString());
         console.log("hexOTP: ", hexOTP);
         console.log("hexTimeStep: ", hexTimeStep);
         const nullifier = await getNullifier(leaf.toString(), hexOTP, hexTimeStep);
@@ -96,6 +97,7 @@ export class NoirOTP {
             timestep: hexTimeStep,
         };
         console.log("input: ", input);
+        await this.noir.init();
         const proof = await this.noir.generateFinalProof(input);
         console.log("proof: ", proof);
         const result = await this.noir.verifyFinalProof(proof);
@@ -129,8 +131,17 @@ export async function getNullifier(leaf, otp, timestep) {
 export function getDepth(numLeaves) {
     return Math.ceil(Math.log2(numLeaves));
 }
+// export function padToHexStr(value: number) {
+// 	return `0x${value.toString(16).padStart(6, "0")}`;
+// }
 export function padToHexStr(value) {
-    return `0x${value.toString(16).padStart(6, "0")}`;
+    let hex = parseInt(value, 10).toString(16);
+    // Check if the hex string length is odd
+    if (hex.length % 2 !== 0) {
+        // Pad with '0' at the beginning if the length is odd
+        hex = "0" + hex;
+    }
+    return `0x${hex}`;
 }
 export function strToFrArray(array) {
     return array.map((str) => Fr.fromString(str));
@@ -138,3 +149,6 @@ export function strToFrArray(array) {
 export function frToStrArray(array) {
     return array.map((str) => str.toString());
 }
+/*
+node --loader ts-node/esm --experimental-specifier-resolution=node ./test/main.ts --no-warnings
+*/

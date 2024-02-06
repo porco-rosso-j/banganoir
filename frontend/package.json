@@ -25,8 +25,7 @@
         "rollup-plugin-copy": "^3.5.0",
         "ts-node": "^10.9.1",
         "typescript": "^5.1.6",
-        "vite-plugin-node-polyfills": "^0.19.0",
-        "vite-plugin-wasm": "^3.3.0"
+        "vite-plugin-node-polyfills": "^0.19.0"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",
@@ -40,7 +39,6 @@
         "postcss": "^8.4.32",
         "postcss-preset-mantine": "^1.12.2",
         "postcss-simple-vars": "^7.0.1",
-        "vite": "^5.0.8",
-        "vite-plugin-top-level-await": "^1.4.1"
+        "vite": "^5.0.8"
     }
 }

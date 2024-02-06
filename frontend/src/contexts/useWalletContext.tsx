@@ -36,7 +36,7 @@ export const WalletContextProviderComponent: React.FC<WalletContextProps> = ({
 		setModuleAddress("");
 		setAccountAddress("");
 		localStorage.removeItem(`module_address`);
-		localStorage.removeItem(`account_address`);
+		localStorage.removeItem(`contract_address`);
 	};
 
 	const saveModuleAddress = (_moduleAddress: string) => {
