@@ -2,13 +2,15 @@ import { useState } from "react";
 import { accFacContract, noir } from "../utils/constants";
 import { NoirOTP } from "@porco/noir-otp-lib";
 import { authenticator } from "@otplib/preset-browser";
-import { storeOTPNodes } from "../utils/storeOTPNodes";
+import { storeOTPNodesIPFS } from "../utils/storeOTPNodes";
 
 export default function useInitOTP(
 	noirOTP: NoirOTP | undefined,
 	handleNoirOTP: (noirOTP: NoirOTP) => void,
 	root: string,
-	setRoot: (root: string) => void
+	setRoot: (root: string) => void,
+	ipfsCID: string,
+	setIpfsCID: (ipfsCID: string) => void
 ) {
 	const [qrCode, setQRCode] = useState<string>("");
 	const [qrVerified, setQRVerified] = useState<boolean>(false);
@@ -27,7 +29,9 @@ export default function useInitOTP(
 		console.log("root: ", root);
 		setRoot(root);
 
-		await storeOTPNodes(root, noirOTP.otpNodes);
+		// await storeOTPNodes(root, noirOTP.otpNodes);
+		const ipfsCID = await storeOTPNodesIPFS(noirOTP.otpNodes);
+		setIpfsCID(ipfsCID);
 
 		const qr = await noirOTP.getQRCode(user);
 		console.log("qr: ", qr);
@@ -55,16 +59,26 @@ export default function useInitOTP(
 
 	async function deployAccount(): Promise<string> {
 		let accAddr = "";
-		if (noirOTP && root) {
+		if (noirOTP && root && ipfsCID) {
 			try {
-				accAddr = await accFacContract.getAccountAddress(root, noirOTP.step, 0);
+				accAddr = await accFacContract.getAccountAddress(
+					root,
+					noirOTP.step,
+					ipfsCID,
+					0
+				);
 				console.log("accAddr: ", accAddr);
 
 				console.log("root: ", root);
 				console.log("noirOTP.step: ", noirOTP.step);
 
 				// deploy wallet
-				const tx = await accFacContract.createAccount(root, noirOTP.step, 0);
+				const tx = await accFacContract.createAccount(
+					root,
+					noirOTP.step,
+					ipfsCID,
+					0
+				);
 				console.log("tx: ", tx);
 				const result = await tx.wait();
 				console.log("result: ", result);

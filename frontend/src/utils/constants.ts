@@ -16,7 +16,7 @@ const wallet = new ethers.Wallet(
 	provider
 );
 
-const factoryAddr = "0xE7041b79BBa3BbeCF6F8eDb78A53dD1FbdC75e6C";
+const factoryAddr = "0xF75B637Eb1D3fb14Fb9bEF9892E991679D9831e6";
 
 const accFacContract = new ethers.Contract(
 	factoryAddr,

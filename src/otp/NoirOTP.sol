@@ -8,6 +8,7 @@ contract NoirOTP {
     bytes32 public merkleRoot;
     address public verifier;
     uint16 public step;
+    string public ipfsHash;
 
     mapping(bytes32 => bool) public nullifiers;
 
@@ -16,11 +17,13 @@ contract NoirOTP {
     function initalzieNoirOTP(
         address _verifier,
         bytes32 _merkleRoot,
-        uint16 _step
+        uint16 _step,
+        string memory _ipfsHash
     ) internal {
         verifier = _verifier;
         merkleRoot = _merkleRoot;
         step = _step;
+        ipfsHash = _ipfsHash;
     }
 
     function verifyOTP(

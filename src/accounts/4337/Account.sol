@@ -52,10 +52,11 @@ contract Account is
     function initialize(
         address _verifier,
         bytes32 _merkleRoot,
-        uint16 _step
+        uint16 _step,
+        string memory _ipfsHash
     ) public initializer {
         _initialize(address(0));
-        initalzieNoirOTP(_verifier, _merkleRoot, _step);
+        initalzieNoirOTP(_verifier, _merkleRoot, _step, _ipfsHash);
     }
 
     function _initialize(address anOwner) internal virtual {

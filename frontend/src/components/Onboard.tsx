@@ -19,6 +19,7 @@ import WalletPage from "./WalletPage";
 export default function Onboard() {
 	const [noirOTP, setNoirOTP] = useState<NoirOTP>();
 	const [root, setRoot] = useState<string>("");
+	const [ipfsCID, setIpfsCID] = useState<string>("");
 	const [accDeployedAddr, setDeployedAccAddr] = useState<string>("");
 	const [deployed, setDeployed] = useState(false);
 	const [isWalletOpen, setIsWalletOpen] = useState(false);
@@ -28,7 +29,7 @@ export default function Onboard() {
 	};
 
 	const { qrCode, qrVerified, setQRCode, initOTP, verifyOTP, deployAccount } =
-		useInitOTP(noirOTP, handleNoirOTP, root, setRoot);
+		useInitOTP(noirOTP, handleNoirOTP, root, setRoot, ipfsCID, setIpfsCID);
 
 	const { accountAddress, saveAccountAddress } = useWalletContext();
 
@@ -39,6 +40,7 @@ export default function Onboard() {
 		if (qrVerified && !deployed) {
 			setSetupState(3);
 			handleDeploy();
+			setDeployed(true);
 		}
 	});
 
@@ -64,7 +66,7 @@ export default function Onboard() {
 		const accAddr = await deployAccount();
 		// saveAccountAddress(accAddr);
 		setDeployedAccAddr(accAddr);
-		setDeployed(true);
+		// setDeployed(true);
 		setSetupState(5);
 		setLoadingCreate(false);
 	}

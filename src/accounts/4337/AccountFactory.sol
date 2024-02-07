@@ -34,9 +34,10 @@ contract AccountFactory is Ownable {
     function createAccount(
         bytes32 _merkleRoot,
         uint16 _step,
+        string memory _ipfsHash,
         uint256 salt
     ) public returns (Account ret) {
-        address addr = getAccountAddress(_merkleRoot, _step, salt);
+        address addr = getAccountAddress(_merkleRoot, _step, _ipfsHash, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
             return Account(payable(addr));
@@ -47,7 +48,7 @@ contract AccountFactory is Ownable {
                     address(accountImplementation),
                     abi.encodeCall(
                         Account.initialize,
-                        (verifier, _merkleRoot, _step)
+                        (verifier, _merkleRoot, _step, _ipfsHash)
                     )
                 )
             )
@@ -60,6 +61,7 @@ contract AccountFactory is Ownable {
     function getAccountAddress(
         bytes32 _merkleRoot,
         uint16 _step,
+        string memory _ipfsHash,
         uint256 salt
     ) public view returns (address) {
         return
@@ -72,7 +74,7 @@ contract AccountFactory is Ownable {
                             address(accountImplementation),
                             abi.encodeCall(
                                 Account.initialize,
-                                (verifier, _merkleRoot, _step)
+                                (verifier, _merkleRoot, _step, _ipfsHash)
                             )
                         )
                     )

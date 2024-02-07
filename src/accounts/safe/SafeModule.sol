@@ -22,8 +22,8 @@ contract SafeOTPModule is NoirOTP {
     string public constant NAME = "SafeOTP Module";
     string public constant VERSION = "0.1.0";
 
-    constructor(address _verifier, bytes32 _merkleRoot, uint16 _step) {
-        initalzieNoirOTP(_verifier, _merkleRoot, _step);
+    constructor(address _verifier, bytes32 _merkleRoot, uint16 _step, string memory _ipfsHash) {
+        initalzieNoirOTP(_verifier, _merkleRoot, _step, _ipfsHash);
     }
 
     /// @dev Allows to use the allowance to perform a transfer.

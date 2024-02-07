@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { accFacContract, noir, provider } from "../utils/constants";
+import { noir, provider } from "../utils/constants";
 import AccArtifact from "../utils/artifacts/Account.json";
-import { getOTPNodes } from "../utils/storeOTPNodes";
+import { getOTPNodesIPFS } from "../utils/storeOTPNodes";
 import { useWalletContext } from "../contexts/useWalletContext";
 import { ethers } from "ethers";
 import { NoirOTP } from "@porco/noir-otp-lib";
@@ -20,9 +20,11 @@ export default function useSendETH() {
 
 	async function generateProof(otp: string) {
 		console.log("otp: ", otp);
-		const root = await accContract.merkleRoot();
-		console.log("root: ", root);
-		const otpNodes = await getOTPNodes(root);
+
+		const ipfsCID = await accContract.ipfsHash();
+		console.log("ipfsCID: ", ipfsCID);
+		// const otpNodes = await getOTPNodes(root);
+		const otpNodes = await getOTPNodesIPFS(ipfsCID);
 		console.log("otpNodes: ", otpNodes);
 
 		const auth = authenticator;
@@ -35,6 +37,9 @@ export default function useSendETH() {
 		console.log("noirOTP: ", noirOTP);
 		// await noirOTP.noir.init();
 		console.log("otp!!: ", otp);
+
+		const root = await accContract.merkleRoot();
+		console.log("root: ", root);
 		const proofData = await noirOTP.generateOTPProof(root, otp, otpNodes);
 		console.log("proofData: ", proofData);
 
