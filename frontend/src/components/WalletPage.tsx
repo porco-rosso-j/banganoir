@@ -12,7 +12,7 @@ import {
 	Loader,
 } from "@mantine/core";
 import { useWalletContext } from "../contexts/useWalletContext";
-import { shortenAddress } from "../utils/shortenAddr";
+import { shortenAddress, shortenTxHash } from "../utils/shortenAddr";
 import { provider, wallet } from "../utils/constants";
 import { ethers } from "ethers";
 import useSendETH from "../hooks/useSendETH";
@@ -21,9 +21,20 @@ import OTPModal from "./Modals/OTP";
 export default function WalletPage() {
 	const [isModalOpen, setModalOpen] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
+	const [loading, setLoading] = useState<boolean>(false);
 
 	const { accountAddress } = useWalletContext();
-	const { generateProof } = useSendETH();
+	const {
+		userOpHash,
+		txHash,
+		sendStatus,
+		sendStatusMsg,
+		setSendStatus,
+		setTxHash,
+		setUserOpHash,
+		generateProof,
+		sendTX,
+	} = useSendETH();
 
 	const [etherBalance, setEtherBalance] = useState<number>(0);
 	const [sendAmount, setSendAmount] = useState<number>(0);
@@ -60,13 +71,44 @@ export default function WalletPage() {
 	}
 
 	async function sendETH(otp: string) {
+		setLoading(true);
+		setSendStatus(0);
+		setTxHash("");
+		setUserOpHash("");
+
+		let genProofResult;
 		try {
 			setModalOpen(false);
-			await generateProof(otp);
+			genProofResult = await generateProof(otp);
 		} catch (e) {
 			console.log("e: ", e);
 			setErrorMessage("Something went wrong");
 		}
+
+		if (genProofResult) {
+			try {
+				const witnessArray: string[] = Array.from(
+					genProofResult.proofData.publicInputs.values()
+				);
+				await sendTX(
+					sendAmount,
+					recepient,
+					genProofResult.proofData.proof,
+					witnessArray[1],
+					genProofResult.timestep
+				);
+
+				await getETHBalance();
+			} catch (e) {
+				console.log("e: ", e);
+				setErrorMessage("Something went wrong");
+				setLoading(false);
+			}
+		} else {
+			setErrorMessage("poof not found");
+		}
+
+		setLoading(false);
 	}
 
 	return (
@@ -183,6 +225,8 @@ export default function WalletPage() {
 							mt={20}
 							color="green"
 							size="md"
+							loading={loading}
+							disabled={loading}
 							onClick={() => {
 								setErrorMessage("");
 								if (recepient && sendAmount) {
@@ -194,7 +238,48 @@ export default function WalletPage() {
 						>
 							Send
 						</Button>
-						<Text style={{ color: "red" }}>{errorMessage}</Text>
+						<Stack gap={5} mt={5}>
+							<Text style={{ textAlign: "center", color: "red" }}>
+								{errorMessage}
+							</Text>
+							{loading && sendStatus !== 0 ? (
+								<Text mb={5} style={{ fontSize: "16px" }}>
+									[Status] {sendStatusMsg[sendStatus - 1]}
+								</Text>
+							) : null}
+							{sendStatus === 4 && userOpHash !== "" ? (
+								<Center>
+									<Text style={{ fontSize: "14px" }}>
+										UserOperation Hash:{" "}
+										<Anchor
+											ml={2}
+											href={"https://app.jiffyscan.xyz/"}
+											target="_blank"
+											rel="noopener noreferrer"
+											style={{ fontSize: "14px", textDecoration: "underline" }}
+										>
+											{shortenTxHash(userOpHash)}
+										</Anchor>
+									</Text>
+								</Center>
+							) : null}
+							{sendStatus === 4 && txHash !== "" ? (
+								<Center>
+									<Text style={{ fontSize: "14px" }}>
+										Transaction Hash:{" "}
+										<Anchor
+											ml={2}
+											href={"https://sepolia.scrollscan.com/tx/" + txHash}
+											target="_blank"
+											rel="noopener noreferrer"
+											style={{ fontSize: "14px", textDecoration: "underline" }}
+										>
+											{shortenAddress(txHash)}
+										</Anchor>
+									</Text>
+								</Center>
+							) : null}
+						</Stack>
 					</Stack>
 				</Stack>
 			</Box>

@@ -27,6 +27,12 @@ contract Account is
         _;
     }
 
+
+    modifier validateTimestep() {
+        require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
+        _;
+    }
+
     function _onlySelf() internal view {
         require(msg.sender == address(this), "ONLY_SELF");
     }
@@ -79,7 +85,7 @@ contract Account is
         address dest,
         uint256 value,
         bytes calldata func
-    ) external {
+    ) external validateTimestep {
         _requireFromEntryPointOrOwner();
         _call(dest, value, func);
     }
@@ -90,7 +96,7 @@ contract Account is
     function executeBatch(
         address[] calldata dest,
         bytes[] calldata func
-    ) external {
+    ) external validateTimestep {
         _requireFromEntryPointOrOwner();
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
@@ -110,12 +116,25 @@ contract Account is
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal virtual override returns (uint256 validationData) {
-        (bytes memory proof, bytes32 nullifierHash) = abi.decode(
+        (bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
             userOp.signature,
-            (bytes, bytes32)
+            (bytes, bytes32, uint)
         );
 
-        if (!verifyOTP(proof, nullifierHash)) return SIG_VALIDATION_FAILED;
+        if (!verifyOTP(proof, nullifierHash, timestep)) return SIG_VALIDATION_FAILED;
+        return 0;
+    }
+
+    function validateSignature(
+        UserOperation calldata userOp,
+        bytes32 userOpHash
+    ) public returns (uint256 validationData) {
+        (bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
+            userOp.signature,
+            (bytes, bytes32, uint)
+        );
+
+        if (!verifyOTP(proof, nullifierHash, timestep)) return SIG_VALIDATION_FAILED;
         return 0;
     }
 

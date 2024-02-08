@@ -1,5 +1,5 @@
 import { CID } from "multiformats/cid";
-import pinataSDK, { PinataPinOptions, PinataPinResponse } from "@pinata/sdk";
+import pinataSDK, { PinataPinOptions } from "@pinata/sdk";
 
 const gatewayUrl = `https://gateway.pinata.cloud/ipfs/`;
 

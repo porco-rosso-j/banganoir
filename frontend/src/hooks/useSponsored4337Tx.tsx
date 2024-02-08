@@ -5,12 +5,6 @@ import { ethers } from "ethers";
 // https://docs.pimlico.io/paymaster/verifying-paymaster/how-to/sponsor-a-user-operation
 // https://dashboard.pimlico.io/sponsorship-policies/edit/sp_lazy_typhoid_mary
 
-const entryPoint = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789";
-const pimlicoApiKey = "YOUR_PIMLICO_API_KEY_HERE";
-const chain = "scroll"; // find the list of supported chains at https://docs.pimlico.io/bundler
-const pimlicoEndpoint = `https://api.pimlico.io/v1/${chain}/rpc?apikey=${pimlicoApiKey}`;
-const pimlicoProvider = new ethers.JsonRpcProvider(pimlicoEndpoint);
-
 type txResult = {
 	result: boolean;
 	txHash: string;
@@ -44,12 +38,12 @@ const useSponsored4337Tx = (onOpen: () => void) => {
 		setLoading(true);
 
 		const userOperation = "";
-		const result = await pimlicoProvider.send("pm_sponsorUserOperation", [
-			userOperation,
-			{ entryPoint: entryPoint },
-		]);
+		// const result = await pimlicoProvider.send("pm_sponsorUserOperation", [
+		// 	userOperation,
+		// 	{ entryPoint: entryPoint },
+		// ]);
 
-		const paymasterAndData = result.paymasterAndData;
+		// const paymasterAndData = result.paymasterAndData;
 
 		let ret: txResult = empTxResult;
 

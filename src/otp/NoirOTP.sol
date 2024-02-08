@@ -11,6 +11,7 @@ contract NoirOTP {
     string public ipfsHash;
 
     mapping(bytes32 => bool) public nullifiers;
+    uint public currentTimestep;
 
     constructor() {}
 
@@ -28,62 +29,26 @@ contract NoirOTP {
 
     function verifyOTP(
         bytes memory proof,
-        bytes32 _nullifierHash
-    ) internal returns (bool) {
+        bytes32 _nullifierHash,
+        uint timestep
+    ) public returns (bool) {
         require(!nullifiers[_nullifierHash], "DUPLICATED_NULLIFIER");
 
-        uint timestep = block.timestamp / step;
-
         bytes32[] memory publicInputs = new bytes32[](3);
-        publicInputs[0] = _nullifierHash;
-        publicInputs[1] = merkleRoot;
+        publicInputs[0] = merkleRoot;
+        publicInputs[1] = _nullifierHash;
         publicInputs[2] = bytes32(timestep);
 
         if (!IUltraVerifier(verifier).verify(proof, publicInputs)) {
             revert PROOF_VERIFICATION_FAILED();
         } else {
             nullifiers[_nullifierHash] = true;
+            currentTimestep = timestep;
             return true;
         }
     }
 
-    // for unit test
-
-    // function initalzieNoirOTP(
-    //     address _verifier,
-    //     bytes32 _merkleRoot,
-    //     uint16 _step
-    // ) public {
-    //     verifier = _verifier;
-    //     merkleRoot = _merkleRoot;
-    //     step = _step;
-    // }
-
-    // function verifyOTP(
-    //     bytes memory proof,
-    //     bytes32 _nullifierHash
-    // ) public returns (bool) {
-    //     require(!nullifiers[_nullifierHash], "DUPLICATED_NULLIFIER");
-
-    //     uint timestep = block.timestamp / step;
-
-    //     bytes32[] memory publicInputs = new bytes32[](3);
-    //     publicInputs[0] = merkleRoot;
-    //     publicInputs[1] = _nullifierHash;
-    //     publicInputs[2] = bytes32(timestep);
-
-    //     if (!IUltraVerifier(verifier).verify(proof, publicInputs)) {
-    //         revert PROOF_VERIFICATION_FAILED();
-    //     } else {
-    //         nullifiers[_nullifierHash] = true;
-    //         return true;
-    //     }
-    // }
-
-    // function getTimestep() public view returns (uint, bytes32) {
-    //     uint timestep = block.timestamp / 180;
-    //     bytes32 bytesTimestep = bytes32(timestep);
-
-    //     return (timestep, bytesTimestep);
-    // }
+    function getTimestep() public view returns (uint) {
+        return block.timestamp / step;
+    }
 }

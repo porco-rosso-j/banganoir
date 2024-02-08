@@ -40,7 +40,8 @@ contract SafeOTPModule is NoirOTP {
         bytes memory proof,
         bytes32 nullifierHash
     ) public {
-        require(verifyOTP(proof, nullifierHash), "OTP_VALIDATION_FAILED");
+        uint timestep = block.timestamp / step;
+        require(verifyOTP(proof, nullifierHash, timestep), "OTP_VALIDATION_FAILED");
 
         require(
             safe.execTransactionFromModule(
