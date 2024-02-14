@@ -2,9 +2,9 @@
 
 NoirOTP is a zk-powered TOTP(Time-based one-time password) solution compatible with any authenticator app, e.g. Google Authenticator. It leverages Noir, a DSL for writing zero-knowledge proof circuits.
 
-### Under the hood
+### Description
 
-Unlike popular OTP schemes where a user and website have to securely store a shared secret that is used to generate a corresponding OTP at a given authentication time, in NoirOTP, only the user needs to keep the secret inside their Authenticator app, more specifically, secure storage in their local device. It's discarded immediately after the initial setup in which the secret key is randomly generated to create TOTP hashes and a merkle tree, and the user registers it on their Authenticator app by scanning a QR code shown on a website.
+Unlike popular OTP schemes where a user and website have to securely store a shared secret that is used to generate a corresponding OTP at a given authentication time, in NoirOTP, only the user needs to keep the secret inside their Authenticator app, more specifically, secure storage in their local device. The secret is discarded immediately after the initial setup in which the secret key is randomly generated to create TOTP hashes and a merkle tree, and the user registers it on their Authenticator app by scanning a QR code shown on a website.
 
 The TOTP hashes and the merkle tree mentioned above play a crucial role in authentication. The TOTP hashes are created out of pre-generated TOTPs using the secret and timestamps during the initial setup. The hashes are nodes of the Merkle Tree, and its merkle root is stored on-chain and can be used for authentications happening in the future.
 

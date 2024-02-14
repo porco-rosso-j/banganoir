@@ -24,8 +24,6 @@ contract Deploy is Script {
         // console.logString("verifier");
         // console.logAddress(verifier);
 
-       
-
         // noirOTP = new NoirOTP();
 
         // console.logString("noirOTP");
