@@ -1,3 +1,4 @@
+@anon-aadhaar/=lib/anon-aadhaar/packages/
 @openzeppelin/=lib/openzeppelin-contracts/
 account-abstration/=lib/account-abstration/contracts/
 ds-test/=lib/forge-std/lib/ds-test/src/

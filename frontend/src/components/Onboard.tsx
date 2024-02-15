@@ -15,6 +15,9 @@ import DeploymentSteps from "./DeploymentSteps";
 import { NoirOTP } from "@porco/noir-otp-lib";
 import { shortenAddress } from "../utils/shortenAddr";
 import WalletPage from "./WalletPage";
+import { LogInWithAnonAadhaar } from "../anon-aadhaar-react/index";
+import { useAnonAadhaar } from "../anon-aadhaar-react";
+import { AnonAadhaarCore } from "@anon-aadhaar/core";
 
 export default function Onboard() {
 	const [noirOTP, setNoirOTP] = useState<NoirOTP>();
@@ -35,6 +38,8 @@ export default function Onboard() {
 
 	const [loadingCreate, setLoadingCreate] = useState(false);
 	const [setupState, setSetupState] = useState(0);
+	const [anonAadhaar] = useAnonAadhaar();
+	const [anonAadhaarCore, setAnonAadhaarCore] = useState<AnonAadhaarCore>();
 
 	useEffect(() => {
 		if (qrVerified && !deployed) {
@@ -71,11 +76,20 @@ export default function Onboard() {
 		setLoadingCreate(false);
 	}
 
+	useEffect(() => {
+		if (anonAadhaar.status === "logged-in")
+			setAnonAadhaarCore(anonAadhaar.anonAadhaarProof);
+	}, [anonAadhaar]);
+
 	console.log("isWalletOpen: ", isWalletOpen);
+	console.log("anonAadhaar: ", anonAadhaar);
+	console.log("anonAadhaarCore: ", anonAadhaarCore);
+
 	return isWalletOpen || accountAddress ? (
 		<WalletPage />
 	) : (
 		<>
+			<LogInWithAnonAadhaar signal={"test msg"} />
 			<Container mt={100}>
 				<Box mb={50}>
 					<Text

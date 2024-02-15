@@ -1,6 +1,5 @@
 pragma solidity ^0.8.20;
 
-// import "account-abstraction/samples/SimpleAccount.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "account-abstraction/core/BaseAccount.sol";

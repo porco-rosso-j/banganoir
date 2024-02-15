@@ -7,7 +7,7 @@ function DeploymentSteps(props: { setupState: number; accountAddr: string }) {
 		<Box>
 			<Center
 				style={{
-					marginLeft: "90px",
+					marginLeft: "120px",
 					marginTop: "20px",
 					width: "100vw",
 					display: "flex",

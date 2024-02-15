@@ -25,7 +25,9 @@ const wasmContentTypePlugin = {
 export default defineConfig({
 	plugins: [
 		react(),
-		nodePolyfills(),
+		nodePolyfills({
+			include: ["fs", "readline"],
+		}),
 		copy({
 			targets: [
 				{ src: "node_modules/**/*.wasm", dest: "node_modules/.vite/dist" },

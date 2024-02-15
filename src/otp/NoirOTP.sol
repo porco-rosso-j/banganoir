@@ -13,8 +13,6 @@ contract NoirOTP {
     mapping(bytes32 => bool) public nullifiers;
     uint public currentTimestep;
 
-    constructor() {}
-
     function initalzieNoirOTP(
         address _verifier,
         bytes32 _merkleRoot,
