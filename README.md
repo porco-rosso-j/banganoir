@@ -10,13 +10,13 @@ Banganoir Wallet stores the hash of user Data, which can be retrieved from Aadha
 
 Also, the function has another parameter called `signalHash`, the hash of `userOpHash` which is passed as a comittment to help mitigate on-chain front-running. This can be seen as a form of transaction signature that provides security and integrity of transactions for Banganoir Wallet.
 
-- [Doc](https://github.com/anon-aadhaar/anon-aadhaar)
+[Anon Aadhaar Doc](https://github.com/anon-aadhaar/anon-aadhaar)
 
 ### ERC4337
 
 Banganoir Wallet integrates [Pimlico](pimlico.io)'s ts library called `permissionless.js` and bundler to create user operation and broadcast transaction to scroll sepolia network.
 
-- [EIP4337](https://eips.ethereum.org/EIPS/eip-4337)
+[EIP4337](https://eips.ethereum.org/EIPS/eip-4337)
 
 ### NoirOTP
 
@@ -32,7 +32,7 @@ It's worth noting that all the generated TOTP hashes must be stored somewhere as
 
 This way, it not only replicates the role of websites do in the current TOTP scheme on-chain without storing secret on smart contract but also eliminates trusted intermediately, which is a remote server hosted by counterparty websites. But except for a few drawbacks described below, there is not big differences in UX between the conventional TOTP and NoirOTP solutions from the user point of view.
 
-- [Doc](https://noir-lang.org/docs/)
+[Noir Doc](https://noir-lang.org/docs/)
 
 ## Deployed on Scroll Sepolia
 
