@@ -91,7 +91,7 @@ export class NoirOTP {
         const input = {
             root: root,
             nullifierHash: nullifier,
-            index: index,
+            index: index.toString(),
             hash_path: hash_path,
             otp: hexOTP,
             timestep: hexTimeStep,
@@ -100,8 +100,8 @@ export class NoirOTP {
         await this.noir.init();
         const proof = await this.noir.generateFinalProof(input);
         console.log("proof: ", proof);
-        const result = await this.noir.verifyFinalProof(proof);
-        console.log("result: ", result);
+        // const result = await this.noir.verifyFinalProof(proof);
+        // console.log("result: ", result);
         return proof;
         // return { proof: null, publicInputs: null };
     }

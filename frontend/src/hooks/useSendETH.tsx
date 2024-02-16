@@ -69,10 +69,10 @@ export default function useSendETH() {
 	console.log("status: ", anonAadhaar.status);
 	console.log("anonAadhaar.anonAadhaarProof: ", anonAadhaarCore?.proof);
 
-	async function generateAnonAadahaarProof(
+	async function createUserOp(
 		amount: number,
 		recipient: string
-	): Promise<any> {
+	): Promise<string> {
 		const tx = await accContract.execute.populateTransaction(
 			recipient,
 			ethers.parseEther(amount.toString()),
@@ -86,6 +86,15 @@ export default function useSendETH() {
 		const userOpHash = await getUserOpHash(accountAddress, tx.data, gas);
 		console.log("userOpHash: ", userOpHash);
 		setUserOpHash(userOpHash);
+
+		return userOpHash;
+	}
+
+	async function generateAnonAadahaarProof(
+		amount: number,
+		recipient: string
+	): Promise<any> {
+		const userOpHash = await createUserOp(amount, recipient);
 
 		if (qrData === null) throw new Error("Missing application Id!");
 
@@ -120,6 +129,7 @@ export default function useSendETH() {
 
 		const root = await accContract.merkleRoot();
 		console.log("root: ", root);
+		// await noirOTP.noir.init();
 		const proofData = await noirOTP.generateOTPProof(root, otp, otpNodes);
 		console.log("proofData: ", proofData);
 
@@ -130,8 +140,14 @@ export default function useSendETH() {
 	async function sendTX(
 		noirProof: Uint8Array,
 		noirNullifier: string,
-		timestep: number
+		timestep: number,
+		amount?: number,
+		recipient?: string
 	) {
+		if (!calldata) {
+			await createUserOp(amount!, recipient!);
+		}
+
 		setSendStatus(3); // constructing userOp tx
 
 		console.log("proof: ", noirProof);

@@ -116,6 +116,7 @@ export default function WalletPage() {
 			console.log("e: ", e);
 			setErrorMessage("Something went wrong");
 			setLoading(false);
+			return;
 		}
 
 		if (genProofResult) {
@@ -126,7 +127,9 @@ export default function WalletPage() {
 				await sendTX(
 					genProofResult.proofData.proof,
 					witnessArray[1],
-					genProofResult.timestep
+					genProofResult.timestep,
+					sendAmount,
+					recepient
 				);
 
 				await getETHBalance();
@@ -307,7 +310,7 @@ export default function WalletPage() {
 											rel="noopener noreferrer"
 											style={{ fontSize: "14px", textDecoration: "underline" }}
 										>
-											{shortenAddress(txHash)}
+											{shortenTxHash(txHash)}
 										</Anchor>
 									</Text>
 								</Center>
