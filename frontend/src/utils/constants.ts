@@ -8,8 +8,11 @@ import { Noir } from "@noir-lang/noir_js";
 import otpCircuit from "./artifacts/circuits/otp.json";
 import { createClient, createPublicClient, http } from "viem";
 import { scrollSepolia } from "viem/chains";
-import { pimlicoPaymasterActions } from "permissionless/actions/pimlico";
-import { getAccountNonce } from "permissionless";
+import {
+	pimlicoBundlerActions,
+	pimlicoPaymasterActions,
+} from "permissionless/actions/pimlico";
+import { getAccountNonce, bundlerActions } from "permissionless";
 
 const providerURL = "https://rpc.ankr.com/scroll_sepolia_testnet";
 const provider = new ethers.JsonRpcProvider(providerURL);
@@ -19,13 +22,16 @@ const wallet = new ethers.Wallet(
 	provider
 );
 
-const factoryAddr = "0x70623C00d7781aBf57Dd97e94a5DE45d157965BD";
+const factoryAddr = "0xE3c79375aAE1C7E94D98F2dC6457aCa8fA0C9A47";
 
 const accFacContract = new ethers.Contract(
 	factoryAddr,
 	AccFacArtifact.abi,
 	wallet
 );
+
+const dummySig =
+	"0xfffffffffffffffffffffffffffffff0000000000000000000000000000000007aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1c";
 
 const perhapsPimlicoBundlerScroll =
 	"0x4337003fcD2F56DE3977cCb806383E9161628D0E";
@@ -39,7 +45,18 @@ const pimlicoEndpoint = `https://api.pimlico.io/v2/scroll-sepolia-testnet/rpc?ap
 const pimlicoEndpointV1 = `https://api.pimlico.io/v1/scroll-sepolia-testnet/rpc?apikey=${pimlicoApiKey}`;
 const pimlicoSponsorPolicyId = "sp_lazy_typhoid_mary";
 
-const pimlicoProvider = new ethers.JsonRpcProvider(pimlicoEndpointV1, 534351);
+const scrollSepliaChainId = 534351;
+const pimlicoProvider = new ethers.JsonRpcProvider(
+	pimlicoEndpointV1,
+	scrollSepliaChainId
+);
+
+const bundlerClient = createClient({
+	chain: scrollSepolia,
+	transport: http(pimlicoEndpointV1),
+})
+	.extend(bundlerActions)
+	.extend(pimlicoBundlerActions);
 
 const pimlicoPaymasterClientV1 = createClient({
 	chain: scrollSepolia,
@@ -75,6 +92,9 @@ export {
 	factoryAddr,
 	accFacContract,
 	noir,
+	dummySig,
+	scrollSepliaChainId,
+	bundlerClient,
 	pimlicoPaymasterClient,
 	pimlicoPaymasterClientV1,
 	entryPoint,

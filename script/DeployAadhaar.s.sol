@@ -1,22 +1,26 @@
 pragma solidity ^0.8.17;
 
-import {AnonAadaarVerify} from "../src/aadhaar/AnonAadaarVerify.sol";
+import {AnonAadhaar} from "../src/aadhaar/scroll-sepolia-1.0.0/AnonAadhaar.sol";
+import {VerifierTest} from "../src/aadhaar/scroll-sepolia-1.0.0/VerifierTest.sol";
 import "forge-std/Script.sol";
 
 contract Deploy is Script {
     uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
-    // https://github.com/anon-aadhaar/anon-aadhaar/blob/main/packages/contracts/deployed-contracts/scroll-sepolia.json
-    // address public AnonAadhaarVerifierTest = 0x45199Aa9C90dC945D0710Ce6d5166F9fb8263f04;
-    address public AnonAadhaarTest = 0xbe4ce954Cb0f6b51E86ADa0195055CfB502380Ad;
-    uint public userDataHash = 17943245711284926419220771095930365430627837417315902048749925131112880570484;
+    VerifierTest public verifier;
+     AnonAadhaar public anonAadhaar;
+
+    // https://github.com/anon-aadhaar/anon-aadhaar/blob/v1.0.0/packages/contracts/test/const.ts
+    uint public testPubKeyHash = 14283653287016348311748048156110700109007577525298584963450140859470242476430;
 
     function run() external {
         vm.startBroadcast(deployerPrivateKey);
 
-        anonAadhaarVerify = new AnonAadaarVerify(AnonAadhaarTest, userDataHash);
+        // anonAadhaarVerify = new AnonAadhaarVerify(AnonAadhaarTest, userDataHash);
+        verifier = new VerifierTest();
+        anonAadhaar = new AnonAadhaar(address(verifier), testPubKeyHash);
 
-        console.logString("factory");
-        console.logAddress(address(anonAadhaarVerify));
+        console.logString("anonAadhaar");
+        console.logAddress(address(anonAadhaar));
     }
 }

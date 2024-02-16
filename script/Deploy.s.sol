@@ -14,8 +14,8 @@ contract Deploy is Script {
     AccountFactory public factory;
     Account public account;
     IEntryPoint public entryPoint = IEntryPoint(0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
-    address verifier = 0xb60D7F7Ec0a92da8Deb34E8255c31AcE45Faedf4;
-    address AnonAadhaarTest = 0xbe4ce954Cb0f6b51E86ADa0195055CfB502380Ad;
+    address ultraVerifier = 0xb60D7F7Ec0a92da8Deb34E8255c31AcE45Faedf4;
+    address anonAadhaarTest = 0x388b96C6287BFa8c2Ba0da8E865fE003EDBf762A;
 
     function run() external {
         vm.startBroadcast(deployerPrivateKey);
@@ -31,7 +31,7 @@ contract Deploy is Script {
         // console.logAddress(address(noirOTP));
         
 
-        factory = new AccountFactory(entryPoint, verifier);
+        factory = new AccountFactory(entryPoint, anonAadhaarTest, ultraVerifier);
 
         console.logString("factory");
         console.logAddress(address(factory));

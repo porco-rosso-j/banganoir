@@ -34,15 +34,19 @@ function DeploymentSteps(props: { setupState: number; accountAddr: string }) {
 						iconSize={25}
 					>
 						<Stepper.Step
+							label="Provide Aadhaar Identity"
+							description={active == 0 ? "Provide secure QR code..." : ""}
+						></Stepper.Step>
+						<Stepper.Step
 							label="Generate One-Time Passwords"
 							description={
-								active == 0 ? "OTPs pre-generation takes about a minute..." : ""
+								active == 1 ? "OTPs pre-generation takes about a minute..." : ""
 							}
 						></Stepper.Step>
 						<Stepper.Step
 							label="Scan QR code and verify"
 							description={
-								active == 1
+								active == 2
 									? "Open your Authenticator App, e.g. Google Authenticator"
 									: ""
 							}
@@ -50,7 +54,7 @@ function DeploymentSteps(props: { setupState: number; accountAddr: string }) {
 						<Stepper.Step
 							label="Deploy Wallet"
 							description={
-								active == 2
+								active == 3
 									? "Your account is being deployed on Scroll Testnet..."
 									: ""
 							}

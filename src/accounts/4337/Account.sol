@@ -5,13 +5,15 @@ import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "account-abstraction/core/BaseAccount.sol";
 import "account-abstraction/samples/callback/TokenCallbackHandler.sol";
 import "src/otp/NoirOTP.sol";
+import "src/aadhaar/AnonAadhaarVerify.sol";
 
 contract Account is
     BaseAccount,
     UUPSUpgradeable,
     Initializable,
     TokenCallbackHandler,
-    NoirOTP
+    NoirOTP,
+    AnonAadhaarVerify
 {
     IEntryPoint private immutable _entryPoint;
     address public owner;
@@ -27,9 +29,14 @@ contract Account is
     }
 
 
-    modifier validateTimestep() {
-        require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
-        _;
+    // modifier validateTimestep() {
+    //     require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
+    //     _;
+    // }
+
+    function _validateTimeValidity() internal {
+         require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
+         // require(isLessThan3HoursAgo(), "NOT_LESS_THAN_3H_AGO");
     }
 
     function _onlySelf() internal view {
@@ -55,13 +62,16 @@ contract Account is
     }
 
     function initialize(
-        address _verifier,
+        address _anonAadhaarVerifierAddr, 
+        uint _userDataHash,
+        address _noirOTPVerifier,
         bytes32 _merkleRoot,
         uint16 _step,
         string memory _ipfsHash
     ) public initializer {
         _initialize(address(0));
-        initalzieNoirOTP(_verifier, _merkleRoot, _step, _ipfsHash);
+        _initializeAnonAadhaar(_anonAadhaarVerifierAddr, _userDataHash);
+        initalzieNoirOTP(_noirOTPVerifier, _merkleRoot, _step, _ipfsHash);
     }
 
     function _initialize(address anOwner) internal virtual {
@@ -84,8 +94,9 @@ contract Account is
         address dest,
         uint256 value,
         bytes calldata func
-    ) external validateTimestep {
+    ) external {
         _requireFromEntryPointOrOwner();
+        _validateTimeValidity();
         _call(dest, value, func);
     }
 
@@ -95,8 +106,9 @@ contract Account is
     function executeBatch(
         address[] calldata dest,
         bytes[] calldata func
-    ) external validateTimestep {
+    ) external {
         _requireFromEntryPointOrOwner();
+         _validateTimeValidity();
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
@@ -115,27 +127,34 @@ contract Account is
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal virtual override returns (uint256 validationData) {
-        (bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
+        (uint identityNullifier, uint timestamp, uint signal, uint[8] memory groth16Proof, bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
             userOp.signature,
-            (bytes, bytes32, uint)
+            (uint, uint, uint, uint[8], bytes, bytes32, uint)
         );
 
-        if (!verifyOTP(proof, nullifierHash, timestep)) return SIG_VALIDATION_FAILED;
+
+        if (
+            !verifyAnonAadhaar(identityNullifier, timestamp, signal, groth16Proof) || 
+            !verifyOTP(proof, nullifierHash, timestep)) 
+        return SIG_VALIDATION_FAILED;
         return 0;
     }
 
-    function validateSignature(
-        UserOperation calldata userOp,
-        bytes32 userOpHash
-    ) public returns (uint256 validationData) {
-        (bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
-            userOp.signature,
-            (bytes, bytes32, uint)
-        );
+    // function validateSignature(
+    //     UserOperation calldata userOp,
+    //     bytes32 userOpHash
+    // ) public returns (uint256 validationData) {
+    //     (uint identityNullifier, uint timestamp, uint signal, uint[8] memory groth16Proof, bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
+    //         userOp.signature,
+    //         (uint, uint, uint, uint[8], bytes, bytes32, uint)
+    //     );
 
-        if (!verifyOTP(proof, nullifierHash, timestep)) return SIG_VALIDATION_FAILED;
-        return 0;
-    }
+    //     if (
+    //         !verifyAnonAadhaar(identityNullifier, timestamp, signal, groth16Proof) || 
+    //         !verifyOTP(proof, nullifierHash, timestep)) 
+    //     return SIG_VALIDATION_FAILED;
+    //     return 0;
+    // }
 
     function _call(address target, uint256 value, bytes memory data) internal {
         (bool success, bytes memory result) = target.call{value: value}(data);

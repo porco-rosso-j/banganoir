@@ -26,7 +26,7 @@ export default defineConfig({
 	plugins: [
 		react(),
 		nodePolyfills({
-			include: ["fs", "readline"],
+			include: ["fs", "readline", "crypto"],
 		}),
 		copy({
 			targets: [

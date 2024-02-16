@@ -13,7 +13,7 @@ export default function Header() {
 			>
 				Banganoir
 			</Text>
-			<Group>
+			<Group mt={5}>
 				<Anchor
 					href="https://github.com/porco-rosso-j/noir-otp"
 					target="_blank"
@@ -28,7 +28,7 @@ export default function Header() {
 					mr={30}
 					style={{ backgroundColor: "gray" }}
 				>
-					Leave
+					Logout
 				</Button>
 			</Group>
 		</Group>

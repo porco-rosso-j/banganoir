@@ -1,11 +1,8 @@
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
 	entryPoint,
 	noir,
-	nonce,
-	pimlicoPaymasterClient,
 	pimlicoPaymasterClientV1,
-	pimlicoProvider,
 	provider,
 } from "../utils/constants";
 import AccArtifact from "../utils/artifacts/Account.json";
@@ -16,6 +13,18 @@ import { NoirOTP } from "@porco/noir-otp-lib";
 import { authenticator } from "@otplib/preset-browser";
 import { testVerify } from "../utils/testVerify";
 import { ProofData } from "@noir-lang/backend_barretenberg";
+import {
+	getGas,
+	getUserOp,
+	getUserOpHash,
+	toJsonUserOp,
+} from "../utils/userOpUtils";
+import {
+	AnonAadhaarContext,
+	useAnonAadhaar,
+} from "../anon-aadhaar-react/hooks/useAnonAadhaar";
+import { processAadhaarArgs } from "../anon-aadhaar-react";
+import { AnonAadhaarCore, packGroth16Proof } from "@anon-aadhaar/core";
 import { GetUserOperationReceiptReturnType } from "permissionless";
 
 type GenProofResultType = {
@@ -24,10 +33,15 @@ type GenProofResultType = {
 };
 
 export default function useSendETH() {
-	const { accountAddress } = useWalletContext();
+	const { state, startReq, useTestAadhaar } = useContext(AnonAadhaarContext);
+	const [anonAadhaar] = useAnonAadhaar();
+	const [anonAadhaarCore, setAnonAadhaarCore] = useState<AnonAadhaarCore>();
+	const { qrData, accountAddress } = useWalletContext();
 	const [sendStatus, setSendStatus] = useState<number>(0);
+	const [txGas, setTxGas] = useState<bigint>(0n);
 
 	const [userOpHash, setUserOpHash] = useState<string>("");
+	const [calldata, setCalldata] = useState<string>("");
 	const [txHash, setTxHash] = useState<string>("");
 	const [txResult, setTxResult] = useState<boolean>(false);
 
@@ -38,15 +52,53 @@ export default function useSendETH() {
 	);
 
 	const sendStatusMsg = [
-		"Generating Proof. It may take more than a minute... (1/3)",
-		"Creating Transaction... (2/3)",
-		"Broadcasting Transaction... (3/3)",
+		"Generating AnonAadhaar Proof. It may take a few mins... (1/4)",
+		"Generating NoirOTP Proof. It may take more than a minute... (2/4)",
+		"Creating Transaction... (3/4)",
+		"Broadcasting Transaction... (4/4)",
 		txResult
 			? "Done! Your tx was successfully sent!"
 			: "Failed. Something went wrong.",
 	];
 
-	async function generateProof(otp: string): Promise<GenProofResultType> {
+	useEffect(() => {
+		if (anonAadhaar.status === "logged-in" && !anonAadhaarCore)
+			setAnonAadhaarCore(anonAadhaar.anonAadhaarProof);
+	}, [anonAadhaar, anonAadhaarCore]);
+
+	console.log("status: ", anonAadhaar.status);
+	console.log("anonAadhaar.anonAadhaarProof: ", anonAadhaarCore?.proof);
+
+	async function generateAnonAadahaarProof(
+		amount: number,
+		recipient: string
+	): Promise<any> {
+		const tx = await accContract.execute.populateTransaction(
+			recipient,
+			ethers.parseEther(amount.toString()),
+			"0x"
+		);
+		console.log("tx: ", tx);
+		setCalldata(tx.data);
+
+		const gas = await getGas();
+		setTxGas(gas);
+		const userOpHash = await getUserOpHash(accountAddress, tx.data, gas);
+		console.log("userOpHash: ", userOpHash);
+		setUserOpHash(userOpHash);
+
+		if (qrData === null) throw new Error("Missing application Id!");
+
+		const args = await processAadhaarArgs(qrData, useTestAadhaar, userOpHash);
+		console.log("args: ", args);
+
+		startReq({ type: "login", args });
+	}
+
+	async function generateNoirOTPProof(
+		otp: string
+	): Promise<GenProofResultType> {
+		// proof generation
 		console.log("otp: ", otp);
 
 		const ipfsCID = await accContract.ipfsHash();
@@ -63,7 +115,6 @@ export default function useSendETH() {
 
 		const timestep = noirOTP.calcuTimestep(Date.now());
 
-		setSendStatus(1); // proof generation
 		console.log("noirOTP: ", noirOTP);
 		console.log("otp!!: ", otp);
 
@@ -77,87 +128,65 @@ export default function useSendETH() {
 	}
 
 	async function sendTX(
-		amount: number,
-		recipient: string,
-		proof: Uint8Array,
-		nullifier: string,
+		noirProof: Uint8Array,
+		noirNullifier: string,
 		timestep: number
 	) {
-		setSendStatus(2); // constructing userOp tx
+		setSendStatus(3); // constructing userOp tx
 
-		const tx = await accContract.execute.populateTransaction(
-			recipient,
-			ethers.parseEther(amount.toString()),
-			"0x"
-		);
-		console.log("tx: ", tx);
-
-		// const verificaiton = await accContract.verifyOTP.staticCallResult(
-		// 	proof,
-		// 	nullifier,
-		// 	timestep
-		// );
-		// console.log("verificaiton: ", verificaiton);
-
-		console.log("proof: ", proof);
-		console.log("nullifier: ", nullifier);
+		console.log("proof: ", noirProof);
+		console.log("noirNullifier: ", noirNullifier);
 		console.log("timestep: ", timestep);
 		const encoder = ethers.AbiCoder.defaultAbiCoder();
-		const signature = encoder.encode(
-			["bytes", "bytes32", "uint"],
-			[proof, nullifier, timestep]
-		);
 
-		console.log("signature: ", signature);
+		let signature;
+		if (anonAadhaarCore) {
+			const packedGroth16Proof = packGroth16Proof(
+				anonAadhaarCore.proof.groth16Proof
+			);
 
-		const userOperation = {
-			sender: accountAddress,
-			nonce: await nonce(accountAddress),
-			initCode: "0x",
-			callData: tx.data,
-			maxFeePerGas: 7500000n,
-			maxPriorityFeePerGas: 7500000n,
-			signature: signature,
-		};
+			console.log(
+				"identityNullifier: ",
+				BigInt(anonAadhaarCore.proof.identityNullifier)
+			);
+			console.log("timestep: ", Number(anonAadhaarCore?.proof.timestamp));
+			console.log("signalHash: ", BigInt(anonAadhaarCore?.proof.signalHash));
+			console.log("packedGroth16Proof: ", packedGroth16Proof);
 
-		const result = await pimlicoPaymasterClient.sponsorUserOperation({
-			userOperation: userOperation,
-			entryPoint: entryPoint,
-			// sponsorshipPolicyId: pimlicoSponsorPolicyId,
-		});
+			signature = encoder.encode(
+				["uint", "uint", "uint", "uint[8]", "bytes", "bytes32", "uint"],
+				[
+					BigInt(anonAadhaarCore.proof.identityNullifier),
+					Number(anonAadhaarCore?.proof.timestamp),
+					BigInt(userOpHash),
+					packedGroth16Proof,
+					noirProof,
+					noirNullifier,
+					timestep,
+				]
+			);
+		}
 
-		console.log("userOp result: ", result);
+		let userOperation = await getUserOp(accountAddress, calldata, txGas);
+		userOperation.signature = signature as string;
+		const validUserOp = await toJsonUserOp(userOperation!);
 
-		const jsonUserOp = {
-			...result,
-			nonce: toValidStr(result.nonce),
-			callGasLimit: toValidStr(result.callGasLimit),
-			maxFeePerGas: toValidStr(result.maxFeePerGas),
-			maxPriorityFeePerGas: toValidStr(result.maxPriorityFeePerGas),
-			preVerificationGas: toValidStr(result.preVerificationGas),
-			verificationGasLimit: toValidStr(result.verificationGasLimit),
-		};
-
-		console.log("jsonUserOp: ", jsonUserOp);
-		console.log("pimlicoProvider: ", pimlicoProvider);
-
-		const userOpHash = await pimlicoPaymasterClientV1.request({
+		const finalUserOpHash = await pimlicoPaymasterClientV1.request({
 			// @ts-ignore
 			method: "eth_sendUserOperation",
-			params: [jsonUserOp, entryPoint],
+			params: [validUserOp, entryPoint],
 		});
 
-		setUserOpHash(userOpHash as string);
-		setSendStatus(3); // broadcasting userOps
+		setSendStatus(4); // broadcasting userOps
 
-		console.log("userOpHash: ", userOpHash);
+		console.log("finalUserOpHash: ", finalUserOpHash);
 
 		let receipt = null;
 		while (receipt === null) {
 			receipt = (await pimlicoPaymasterClientV1.request({
 				// @ts-ignore
 				method: "eth_getUserOperationReceipt",
-				params: [userOpHash as `0x${string}`],
+				params: [finalUserOpHash as `0x${string}`],
 			})) as GetUserOperationReceiptReturnType;
 			if (receipt) {
 				console.log(receipt);
@@ -172,14 +201,12 @@ export default function useSendETH() {
 			}
 		}
 
-		setSendStatus(4);
+		startReq({ type: "logout" });
+		setSendStatus(5);
 	}
 
-	const toValidStr = (value: bigint) => {
-		return `0x${value.toString(16)}` as `0x${string}`;
-	};
-
 	return {
+		anonAadhaarCore,
 		userOpHash,
 		txHash,
 		sendStatus,
@@ -187,7 +214,8 @@ export default function useSendETH() {
 		setSendStatus,
 		setTxHash,
 		setUserOpHash,
-		generateProof,
+		generateNoirOTPProof,
+		generateAnonAadahaarProof,
 		sendTX,
 	};
 }

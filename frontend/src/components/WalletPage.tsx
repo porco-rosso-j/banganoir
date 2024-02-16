@@ -19,12 +19,13 @@ import useSendETH from "../hooks/useSendETH";
 import OTPModal from "./Modals/OTP";
 
 export default function WalletPage() {
+	const { qrData, accountAddress, saveQrData } = useWalletContext();
 	const [isModalOpen, setModalOpen] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [loading, setLoading] = useState<boolean>(false);
 
-	const { accountAddress } = useWalletContext();
 	const {
+		anonAadhaarCore,
 		userOpHash,
 		txHash,
 		sendStatus,
@@ -32,7 +33,8 @@ export default function WalletPage() {
 		setSendStatus,
 		setTxHash,
 		setUserOpHash,
-		generateProof,
+		generateNoirOTPProof,
+		generateAnonAadahaarProof,
 		sendTX,
 	} = useSendETH();
 
@@ -41,6 +43,13 @@ export default function WalletPage() {
 	const [recepient, setRecepient] = useState<string>("");
 
 	const [faucetClicked, setFacuetClicked] = useState(false);
+
+	useEffect(() => {
+		if (!qrData) {
+			const data = localStorage.getItem("qr_data");
+			saveQrData(data ? JSON.parse(data) : "");
+		}
+	}, [qrData]);
 
 	const getETHBalance = async () => {
 		let rawBalance = await provider.getBalance(accountAddress);
@@ -70,19 +79,43 @@ export default function WalletPage() {
 		setFacuetClicked(false);
 	}
 
-	async function sendETH(otp: string) {
+	async function genAadhaarProof() {
 		setLoading(true);
 		setSendStatus(0);
 		setTxHash("");
 		setUserOpHash("");
 
-		let genProofResult;
 		try {
-			setModalOpen(false);
-			genProofResult = await generateProof(otp);
+			setSendStatus(1);
+			await generateAnonAadahaarProof(sendAmount, recepient);
 		} catch (e) {
 			console.log("e: ", e);
 			setErrorMessage("Something went wrong");
+			setLoading(false);
+		}
+	}
+
+	console.log("sendStatus: ", sendStatus);
+	console.log("isModalOpen: ", isModalOpen);
+
+	useEffect(() => {
+		if (anonAadhaarCore && sendStatus === 1 && !isModalOpen) {
+			setModalOpen(true);
+		}
+	}, [anonAadhaarCore, sendStatus, isModalOpen]);
+
+	async function sendETH(otp: string) {
+		console.log("otp: ", otp);
+
+		let genProofResult;
+		try {
+			setSendStatus(2);
+			setModalOpen(false);
+			genProofResult = await generateNoirOTPProof(otp);
+		} catch (e) {
+			console.log("e: ", e);
+			setErrorMessage("Something went wrong");
+			setLoading(false);
 		}
 
 		if (genProofResult) {
@@ -91,8 +124,6 @@ export default function WalletPage() {
 					genProofResult.proofData.publicInputs.values()
 				);
 				await sendTX(
-					sendAmount,
-					recepient,
 					genProofResult.proofData.proof,
 					witnessArray[1],
 					genProofResult.timestep
@@ -106,6 +137,7 @@ export default function WalletPage() {
 			}
 		} else {
 			setErrorMessage("poof not found");
+			setLoading(false);
 		}
 
 		setLoading(false);
@@ -171,7 +203,7 @@ export default function WalletPage() {
 							Current Balance
 						</Text>
 						<Text style={{ textAlign: "center", fontSize: "40px" }} size="xl">
-							{etherBalance} ETH
+							{etherBalance.toFixed(4)} ETH
 						</Text>
 					</Stack>
 					<Stack mt={20} align="center" style={{ boxShadow: "1rm" }}>
@@ -230,7 +262,8 @@ export default function WalletPage() {
 							onClick={() => {
 								setErrorMessage("");
 								if (recepient && sendAmount) {
-									setModalOpen(true);
+									// setModalOpen(true);
+									genAadhaarProof();
 								} else {
 									setErrorMessage("Inputs not defined");
 								}
@@ -243,11 +276,11 @@ export default function WalletPage() {
 								{errorMessage}
 							</Text>
 							{loading && sendStatus !== 0 ? (
-								<Text mb={5} style={{ fontSize: "16px" }}>
-									[Status] {sendStatusMsg[sendStatus - 1]}
+								<Text mb={5} style={{ fontSize: "14px" }}>
+									{sendStatusMsg[sendStatus - 1]}
 								</Text>
 							) : null}
-							{sendStatus === 4 && userOpHash !== "" ? (
+							{sendStatus === 5 && userOpHash !== "" ? (
 								<Center>
 									<Text style={{ fontSize: "14px" }}>
 										UserOperation Hash:{" "}
@@ -263,7 +296,7 @@ export default function WalletPage() {
 									</Text>
 								</Center>
 							) : null}
-							{sendStatus === 4 && txHash !== "" ? (
+							{sendStatus === 5 && txHash !== "" ? (
 								<Center>
 									<Text style={{ fontSize: "14px" }}>
 										Transaction Hash:{" "}

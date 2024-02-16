@@ -13,3 +13,5 @@ trash
 frontend/public/aadhaar-verifier.wasm
 frontend/public/circuit_final.zkey
 frontend/public/vkey.json
+
+ts-test

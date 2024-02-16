@@ -10,7 +10,8 @@ export default function useInitOTP(
 	root: string,
 	setRoot: (root: string) => void,
 	ipfsCID: string,
-	setIpfsCID: (ipfsCID: string) => void
+	setIpfsCID: (ipfsCID: string) => void,
+	userDataHash: bigint | null
 ) {
 	const [qrCode, setQRCode] = useState<string>("");
 	const [qrVerified, setQRVerified] = useState<boolean>(false);
@@ -59,9 +60,10 @@ export default function useInitOTP(
 
 	async function deployAccount(): Promise<string> {
 		let accAddr = "";
-		if (noirOTP && root && ipfsCID) {
+		if (noirOTP && root && ipfsCID && userDataHash) {
 			try {
 				accAddr = await accFacContract.getAccountAddress(
+					userDataHash,
 					root,
 					noirOTP.step,
 					ipfsCID,
@@ -74,6 +76,7 @@ export default function useInitOTP(
 
 				// deploy wallet
 				const tx = await accFacContract.createAccount(
+					userDataHash,
 					root,
 					noirOTP.step,
 					ipfsCID,

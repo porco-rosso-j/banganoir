@@ -16,6 +16,8 @@ import { verifySignature } from "../verifySignature";
 import { AnonAadhaarContext } from "../hooks/useAnonAadhaar";
 import { ScanQR } from "./ScanQR";
 import { ProveButton } from "./ProveButton";
+import { copmuteUserNullifier } from "../computeUserNullifier";
+import { useWalletContext } from "../../contexts/useWalletContext";
 
 interface ModalProps {
 	isOpen: boolean;
@@ -25,6 +27,8 @@ interface ModalProps {
 	logo: string;
 	qrStatus: AadhaarQRValidation | null;
 	setQrStatus: Dispatch<SetStateAction<AadhaarQRValidation | null>>;
+	userDataHash: bigint | null;
+	setUserDataHash: Dispatch<SetStateAction<bigint | null>>;
 	signal?: string;
 }
 
@@ -36,14 +40,17 @@ export const ProveModal: React.FC<ModalProps> = ({
 	logo,
 	qrStatus,
 	setQrStatus,
+	userDataHash,
+	setUserDataHash,
 }) => {
+	const { saveQrData } = useWalletContext();
 	const { useTestAadhaar } = useContext(AnonAadhaarContext);
 	const [qrData, setQrData] = useState<string | null>(null);
 	const [provingEnabled, setProvingEnabled] = useState<boolean>(false);
 	const [isScanQR, setIsScanQR] = useState<boolean>(false);
 
 	console.log("qrStatus: ", qrStatus);
-	console.log("qrData: ", qrData);
+	// console.log("qrData: ", qrData);
 
 	useEffect(() => {
 		if (qrData) {
@@ -61,42 +68,24 @@ export const ProveModal: React.FC<ModalProps> = ({
 	}, [qrData]);
 
 	useEffect(() => {
-		if (qrStatus === AadhaarQRValidation.SIGNATURE_VERIFIED) {
-			setProvingEnabled(true);
-		} else {
-			setProvingEnabled(false);
-		}
-	}, [qrStatus]);
+		const fetchData = async () => {
+			if (
+				qrData &&
+				!userDataHash &&
+				qrStatus === AadhaarQRValidation.SIGNATURE_VERIFIED
+			) {
+				const userDataHash = await copmuteUserNullifier(qrData);
+				console.log("userDataHash? ", userDataHash);
+				if (userDataHash) {
+					console.log("userDataHash!! ", userDataHash);
+					setUserDataHash(userDataHash);
+					saveQrData(qrData);
+				}
+			}
+		};
 
-	// useEffect(() => {
-	// 	if (qrData && qrStatus == AadhaarQRValidation.SIGNATURE_VERIFIED) {
-	// 		// const witness = await calcuWitness(qrData)
-	// 		// setUserNullifier(witness[2])
-	// 		getUserNullifier(qrData);
-	// 	}
-	// });
-	// useEffect(() => {
-	// 	if (qrStatus === AadhaarQRValidation.SIGNATURE_VERIFIED) {
-	// 		startProving();
-	// 	}
-	// }, [qrStatus]);
-
-	// const startProving = async () => {
-	// 	try {
-	// 		if (qrData === null) throw new Error("Missing application Id!");
-
-	// 		const args = await processAadhaarArgs(qrData, useTestAadhaar);
-
-	// 		startReq({ type: "login", args });
-	// 	} catch (error) {
-	// 		console.log(error);
-	// 		if (error instanceof Error) setErrorMessage(error.message);
-	// 	}
-	// };
-
-	// async function getUserNullifier(qrData: string) {
-	// 	await calcuWitness(qrData);
-	// }
+		fetchData();
+	}, [qrStatus, qrData, userDataHash]);
 
 	return isOpen ? (
 		<ModalOverlay onClick={onClose}>
@@ -173,11 +162,11 @@ export const ProveModal: React.FC<ModalProps> = ({
 							<DocumentResult>{qrStatus}</DocumentResult>
 						</UploadFile>
 					</UploadSection>
-					<ProveButton
+					{/* <ProveButton
 						qrData={qrData}
 						provingEnabled={provingEnabled}
 						setErrorMessage={setErrorMessage}
-					/>
+					/> */}
 				</ModalContent>
 			</BrowserView>
 		</ModalOverlay>
@@ -280,6 +269,7 @@ const UploadSection = styled.div`
 	margin: 0 1rem 0;
 	row-gap: 1rem;
 	max-width: 100%;
+	padding-bottom: 20px;
 `;
 
 const Label = styled.div`
