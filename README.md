@@ -2,15 +2,21 @@
 
 Banganoir is an ERC4337 Wallet controlled by your Aadhaar identity, which integrates NoirOTP to provide an additional layer of security for your funds.
 
-### [Anon Aadhaar](https://github.com/anon-aadhaar/anon-aadhaar)
+### Anon Aadhaar
 
 _Anon Aadhaar is a zero-knowledge protocol that allows Aadhaar ID owners to prove their identity in a privacy preserving way. It provides a set of tools to generate and verify proofs, authenticate users and verify proofs on-chain._
 
-Banganoir Wallet stores the hash of user Data, which can be retrieved from Aadhaar's secure QR code. The raw user data is a private input of proving and on-chain verification is carried out with the hash as one of the public inputs in `AnonAadhaarGroth16Verifier.verifyProof()`. Also, the function has another parameter called `signalHash`, the hash of `userOpHash` which is passed as a comittment to help mitigate on-chain front-running. This can be seen as a form of transaction signature that provides security and integrity of transactions for Banganoir Wallet.
+Banganoir Wallet stores the hash of user Data, which can be retrieved from Aadhaar's secure QR code. The raw user data is a private input of proving and on-chain verification is carried out with the hash as one of the public inputs in `AnonAadhaarGroth16Verifier.verifyProof()`.
 
-### [ERC4337](https://eips.ethereum.org/EIPS/eip-4337)
+Also, the function has another parameter called `signalHash`, the hash of `userOpHash` which is passed as a comittment to help mitigate on-chain front-running. This can be seen as a form of transaction signature that provides security and integrity of transactions for Banganoir Wallet.
+
+- [Doc](https://github.com/anon-aadhaar/anon-aadhaar)
+
+### ERC4337
 
 Banganoir Wallet integrates [Pimlico](pimlico.io)'s ts library called `permissionless.js` and bundler to create user operation and broadcast transaction to scroll sepolia network.
+
+- [EIP4337](https://eips.ethereum.org/EIPS/eip-4337)
 
 ### NoirOTP
 
@@ -26,6 +32,8 @@ It's worth noting that all the generated TOTP hashes must be stored somewhere as
 
 This way, it not only replicates the role of websites do in the current TOTP scheme on-chain without storing secret on smart contract but also eliminates trusted intermediately, which is a remote server hosted by counterparty websites. But except for a few drawbacks described below, there is not big differences in UX between the conventional TOTP and NoirOTP solutions from the user point of view.
 
+- [Doc](https://noir-lang.org/docs/)
+
 ## Deployed on Scroll Sepolia
 
 | Contract               | Address                                    |
@@ -34,7 +42,7 @@ This way, it not only replicates the role of websites do in the current TOTP sch
 | Account Implementation | 0x04De5F6B51C944ABd14C1b5D20bcB56856c08176 |
 | AnonAadhaar(Test)      | 0x388b96C6287BFa8c2Ba0da8E865fE003EDBf762A |
 
-## Challenges
+## Challenges (WIP)
 
 - proving time vs timestep
 - verification cost
