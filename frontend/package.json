@@ -10,6 +10,8 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@anon-aadhaar/core": "1.0.0",
+        "@anon-aadhaar/react": "1.0.0",
         "@mantine/core": "^7.3.2",
         "@mantine/hooks": "^7.3.2",
         "@noir-lang/backend_barretenberg": "0.19.4",
@@ -17,8 +19,10 @@
         "@otplib/preset-browser": "^12.0.1",
         "@pinata/sdk": "^2.1.0",
         "@porco/noir-otp-lib": "file:../noir-otp-lib",
+        "@types/circomlibjs": "^0.1.6",
         "@types/node": "^20.10.6",
         "buffer": "^6.0.3",
+        "circomlibjs": "^0.1.1",
         "ethers": "^6.10.0",
         "multiformats": "^13.0.1",
         "permissionless": "^0.0.35",

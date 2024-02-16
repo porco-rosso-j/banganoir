@@ -1,61 +1,98 @@
-import { useEffect, useState } from "react";
-import {
-	Button,
-	Container,
-	Center,
-	Text,
-	Box,
-	Stack,
-	Anchor,
-} from "@mantine/core";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Container, Center, Text, Box } from "@mantine/core";
 import { useWalletContext } from "../contexts/useWalletContext";
 import useInitOTP from "../hooks/useInitOTP";
 import QRCodeModal from "./Modals/QRCode";
 import DeploymentSteps from "./DeploymentSteps";
 import { NoirOTP } from "@porco/noir-otp-lib";
-import { shortenAddress } from "../utils/shortenAddr";
 import WalletPage from "./WalletPage";
+import { AadhaarQRValidation } from "../anon-aadhaar-react/interface";
+import { icon } from "../anon-aadhaar-react/components/ButtonLogo";
+import { ProveModal } from "../anon-aadhaar-react/components/ProveModal";
+import WalletReadyModal from "./Modals/WalletReady";
 
 export default function Onboard() {
-	const [noirOTP, setNoirOTP] = useState<NoirOTP>();
-	const [root, setRoot] = useState<string>("");
-	const [ipfsCID, setIpfsCID] = useState<string>("");
+	// context
+	const { qrData, accountAddress, saveAccountAddress } = useWalletContext();
+	console.log("accountAddress: ", accountAddress);
+	console.log("qrData: ", qrData);
+
+	// basic state
 	const [accDeployedAddr, setDeployedAccAddr] = useState<string>("");
 	const [deployed, setDeployed] = useState(false);
 	const [isWalletOpen, setIsWalletOpen] = useState(false);
+	const [loadingCreate, setLoadingCreate] = useState(false);
+	const [setupState, setSetupState] = useState(0);
+
+	// anon aadhaar state
+	const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [qrStatus, setQrStatus] = useState<null | AadhaarQRValidation>(null);
+	const [userDataHash, setUserDataHash] = useState<bigint | null>(0n);
+	const blob = new Blob([icon], { type: "image/svg+xml" });
+	const anonAadhaarLogo = useMemo(() => URL.createObjectURL(blob), [icon]);
+
+	// noir otp state
+	const [noirOTP, setNoirOTP] = useState<NoirOTP>();
+	const [root, setRoot] = useState<string>("");
+	const [ipfsCID, setIpfsCID] = useState<string>("");
 
 	const handleNoirOTP = (noirOTP: NoirOTP) => {
 		setNoirOTP(noirOTP);
 	};
-
 	const { qrCode, qrVerified, setQRCode, initOTP, verifyOTP, deployAccount } =
-		useInitOTP(noirOTP, handleNoirOTP, root, setRoot, ipfsCID, setIpfsCID);
+		useInitOTP(
+			noirOTP,
+			handleNoirOTP,
+			root,
+			setRoot,
+			ipfsCID,
+			setIpfsCID,
+			userDataHash
+		);
 
-	const { accountAddress, saveAccountAddress } = useWalletContext();
+	const openModal = () => {
+		setIsModalOpen(true);
+	};
 
-	const [loadingCreate, setLoadingCreate] = useState(false);
-	const [setupState, setSetupState] = useState(0);
-
-	useEffect(() => {
-		if (qrVerified && !deployed) {
-			setSetupState(3);
-			handleDeploy();
-			setDeployed(true);
-		}
-	});
+	const closeModal = () => {
+		setIsModalOpen(false);
+		setErrorMessage(null);
+		setQrStatus(null);
+	};
 
 	useEffect(() => {
 		if (!accountAddress) {
-			const addr = localStorage.getItem("contract_address");
+			const addr = localStorage.getItem("account_address");
 			saveAccountAddress(addr ? JSON.parse(addr) : "");
 		}
-	});
+	}, [accountAddress]);
+
+	useEffect(() => {
+		const initOTPsetup = async () => {
+			if (qrData && userDataHash) {
+				closeModal();
+				setSetupState(2);
+				await initOTP(userDataHash.toString().slice(0, 5));
+				setSetupState(3);
+			}
+		};
+
+		initOTPsetup();
+	}, [qrData, userDataHash]);
+
+	useEffect(() => {
+		if (qrVerified && !deployed) {
+			setSetupState(4);
+			handleDeploy();
+			setDeployed(true);
+		}
+	}, [qrVerified, deployed]);
 
 	async function handleCreateAccount() {
 		setLoadingCreate(true);
 		setSetupState(1);
-		await initOTP("test");
-		setSetupState(2);
+		openModal();
 	}
 
 	async function handleVerifyOTP(otp: string): Promise<boolean> {
@@ -64,14 +101,11 @@ export default function Onboard() {
 
 	async function handleDeploy() {
 		const accAddr = await deployAccount();
-		// saveAccountAddress(accAddr);
 		setDeployedAccAddr(accAddr);
-		// setDeployed(true);
-		setSetupState(5);
+		setSetupState(6);
 		setLoadingCreate(false);
 	}
 
-	console.log("isWalletOpen: ", isWalletOpen);
 	return isWalletOpen || accountAddress ? (
 		<WalletPage />
 	) : (
@@ -118,42 +152,30 @@ export default function Onboard() {
 				</Center>
 			</Container>
 			<DeploymentSteps setupState={setupState} accountAddr={accDeployedAddr} />
-			{setupState === 5 && accDeployedAddr !== "" ? (
-				<Center>
-					<Stack gap={30}>
-						<Text mr={5} style={{ fontSize: "17px" }}>
-							Address:{" "}
-							<Anchor
-								ml={2}
-								href={
-									"https://sepolia.scrollscan.com/address/" + accDeployedAddr
-								}
-								target="_blank"
-								rel="noopener noreferrer"
-								style={{ textDecoration: "underline" }}
-							>
-								{shortenAddress(accDeployedAddr)}
-							</Anchor>
-						</Text>
-
-						<Button
-							style={{ textAlign: "center" }}
-							color="blue"
-							onClick={() => {
-								setIsWalletOpen(true);
-								saveAccountAddress(accDeployedAddr);
-							}}
-						>
-							Go to Wallet Page
-						</Button>
-					</Stack>
-				</Center>
+			{setupState === 6 && accDeployedAddr !== "" ? (
+				<WalletReadyModal
+					accountAddress={accDeployedAddr}
+					setIsWalletOpen={setIsWalletOpen}
+				/>
 			) : null}
 			{qrCode !== "" ? (
 				<QRCodeModal
 					qrCode={qrCode}
 					setQRCode={setQRCode}
 					handleVerifyOTP={handleVerifyOTP}
+				/>
+			) : null}
+			{isModalOpen ? (
+				<ProveModal
+					isOpen={isModalOpen}
+					onClose={closeModal}
+					errorMessage={errorMessage}
+					setErrorMessage={setErrorMessage}
+					logo={anonAadhaarLogo}
+					qrStatus={qrStatus}
+					setQrStatus={setQrStatus}
+					userDataHash={userDataHash}
+					setUserDataHash={setUserDataHash}
 				/>
 			) : null}
 		</>

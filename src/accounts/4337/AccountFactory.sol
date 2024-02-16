@@ -14,15 +14,23 @@ import "./Account.sol";
  */
 contract AccountFactory is Ownable {
     Account public immutable accountImplementation;
-    address public verifier;
+     address public anonAadhaarVerifierAddr;
+    address public noirOTPVerifier;
+    
 
-    constructor(IEntryPoint _entryPoint, address _verifier) {
+    constructor(IEntryPoint _entryPoint, address _anonAadhaarVerifierAddr, address _noirOTPVerifier) {
         accountImplementation = new Account(_entryPoint);
-        verifier = _verifier;
+        anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
+        noirOTPVerifier = _noirOTPVerifier;
+        
     }
 
-    function setVerifier(address _verifier) public onlyOwner {
-        verifier = _verifier;
+    function setNoirOTPVerifier(address _noirOTPVerifier) public onlyOwner {
+        noirOTPVerifier = _noirOTPVerifier;
+    }
+
+    function setAnonAadhaarVerifierAddr(address _anonAadhaarVerifierAddr) public onlyOwner {
+         anonAadhaarVerifierAddr = _anonAadhaarVerifierAddr;
     }
 
     /**
@@ -32,12 +40,13 @@ contract AccountFactory is Ownable {
      * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after account creation
      */
     function createAccount(
+        uint _userDataHash,     
         bytes32 _merkleRoot,
         uint16 _step,
         string memory _ipfsHash,
         uint256 salt
     ) public returns (Account ret) {
-        address addr = getAccountAddress(_merkleRoot, _step, _ipfsHash, salt);
+        address addr = getAccountAddress(_userDataHash, _merkleRoot, _step, _ipfsHash, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
             return Account(payable(addr));
@@ -48,7 +57,7 @@ contract AccountFactory is Ownable {
                     address(accountImplementation),
                     abi.encodeCall(
                         Account.initialize,
-                        (verifier, _merkleRoot, _step, _ipfsHash)
+                        (anonAadhaarVerifierAddr, _userDataHash, noirOTPVerifier, _merkleRoot, _step, _ipfsHash)
                     )
                 )
             )
@@ -59,6 +68,7 @@ contract AccountFactory is Ownable {
      * calculate the counterfactual address of this account as it would be returned by createAccount()
      */
     function getAccountAddress(
+        uint _userDataHash,     
         bytes32 _merkleRoot,
         uint16 _step,
         string memory _ipfsHash,
@@ -74,7 +84,7 @@ contract AccountFactory is Ownable {
                             address(accountImplementation),
                             abi.encodeCall(
                                 Account.initialize,
-                                (verifier, _merkleRoot, _step, _ipfsHash)
+                                (anonAadhaarVerifierAddr, _userDataHash, noirOTPVerifier, _merkleRoot, _step, _ipfsHash)
                             )
                         )
                     )
