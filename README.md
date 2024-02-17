@@ -20,17 +20,22 @@ Banganoir Wallet integrates [Pimlico](pimlico.io)'s ts library called `permissio
 
 ### NoirOTP
 
-NoirOTP is a zk-powered TOTP(Time-based one-time password) solution compatible with any authenticator app, e.g. Google Authenticator. It leverages Noir, a DSL for writing zero-knowledge proof circuits.
+NoirOTP is a zk-powered trustless TOTP(Time-based one-time password) solution compatible with any authenticator app, e.g. Google Authenticator. It leverages Noir, a DSL for writing zkp circuits, to authenticate TOTPs through the verification of Merkle-inclusion proof.
 
-Unlike common OTP schemes where both a user and website have to securely store a shared secret used to generate a corresponding OTP at a given authentication time, NoirOTP does't let the website but only the user to keep the secret in their Authenticator app, more specifically, secure storage in their local device. The secret key is discarded immediately after the initial setup in which the secret is randomly generated to create TOTP hashes and a merkle tree and registered on the user's Authenticator app through QR code scan.
+#### Initial setup
 
-The TOTP hashes and the merkle tree mentioned above play a crucial role in authentication. The TOTP hashes are created out of pre-generated TOTPs using the secret and timestamps during the initial setup. The hashes are nodes of the Merkle Tree, and its merkle root is stored on-chain and will be used for authentications happening in the future.
+During the initial setup, a secret key is randomly created to pre-generate numerous TOTPs that can cover the effective period of all the TOTPs, e.g. 30 days. These TOTPs are hashed to construct a Merkle tree whose each leave is the hash of a TOTP and timestep value.
 
-Whenever an authentication is needed, the user opens their Authenticator App to get a 6-digit password and provide it with the website. With the given otp and the timestamp at that time, a Merkle-inclusion proof of the TOTP hash (`pedersenHash(otp, time)`), is generated off-chain with `noir_js`, and the proof verification is carried out on-chain.
+- timestep: an incrementing value for each OTP ( = timestamp / step ).
+- step: a valid period of each OTP. it's normally 30 seconds but set to 3 mins in NoirOTP.
 
-It's worth noting that all the generated TOTP hashes must be stored somewhere as they are needed to obtain parameters of the proof generation, such as `hash_path` and `index` (of the given leaf node). To address this, TOTP hashes are stored on IPFS network through Pinata's Javascript API at the intial setup, and they are retrived to generate a Merkle-inclusion proof off-chain at every authentication. For the current setup that creates 64 TOTP hashes that can cover about 3.5 hrs of authentication, it is reasonable to store it on cheaper and immutable off-chain storage instead of neither smart contract nor browser storage.
+Note that the secret key is only registered on the user's device, an Authenticator app through QR code scan, and discarded immediately, instead of being stored neither on-chain nor an external server.
 
-This way, it not only replicates the role of websites do in the current TOTP scheme on-chain without storing secret on smart contract but also eliminates trusted intermediately, which is a remote server hosted by counterparty websites. But except for a few drawbacks described below, there is not big differences in UX between the conventional TOTP and NoirOTP solutions from the user point of view.
+#### Authentication
+
+At an authentication, the user gets TOTP from Authenticator app and enters it on an app UI. Then, `noir_js` is used to execute & generate a Merkle-inclusion proof of the TOTP hash, where `root` is fetched from smart contract, and other necessary inputs, such as `hash_path[]` and `index` are computed using all the TOTP hashes stored on ipfs via Pinata.
+
+And the proof is verified by NoirOTP contract where `timestep` as an public input is calculated with `block.timestamp` beforehand. In this approach, the functionality that websites perform in the conventional TOTP scheme can be emulated on-chain without storing the secret anywhere.
 
 [Noir Doc](https://noir-lang.org/docs/)
 
@@ -44,10 +49,26 @@ This way, it not only replicates the role of websites do in the current TOTP sch
 
 ## Challenges (WIP)
 
-- proving time vs timestep
-- verification cost
-- the use of timestamp in on-chain verification while it's forbidden in 4337 tx.
-- difficulties of 4337 on scroll
+### AnonAadhaar
+
+- Proving time
+  Generating AnonAadhaar proof on browser currently takes 2-3mins. Most users, easpecially wallet users, wouldn't be so happy to wait such a long time at every tx.
+
+### NoirOTP
+
+- Time of generating TOTP hashes
+  In the initial setup, pre-generating numerous TOTPs and constructing a merkle tree currently takes about 1 minute that only covers 3.5hrs of the effective OTP period. And this will linearly grow as the number of TOTPs increases.
+
+- Noir's proving time and TOTP validity period
+  Noir's proving currently takes 30-40 seconds on browser, which means that there is always more than 30 sec difference in timestamp between browser proving and on-chain verification.Unless this is shorten, NoirOTP can't set the validity period of an OTP to 30 seconds like common OTPs.
+
+- `block.timestamp` use in on-chain verification while it's forbidden in 4337 validation.
+  EIP4337 simply doesn't allow for calling block.timestamp in tx validation phase. Banganoir gets around this by having the check in execution phase: comparing block.timestamp in execution phrase with `lastTimestamp` that was stored in validation phase.
+
+### Scroll
+
+- Lack of 4337 tools
+  No 4337 explorer that supports Scroll exist yet.
 
 ## Development
 
