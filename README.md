@@ -3,24 +3,27 @@
 Banganoir is an ERC4337 Wallet controlled by your Aadhaar identity, which integrates NoirOTP to provide an additional layer of security for your funds.
 
 ## Technologies
+
 ### Anon Aadhaar
 
 _Anon Aadhaar is a zero-knowledge protocol that allows Aadhaar ID owners to prove their identity in a privacy-preserving way. It provides a set of tools to generate and verify proofs, authenticate users and verify proofs on-chain._
 
-Banganoir Wallet stores the hash of private user data, which can be retrieved from Aadhaar's secure QR code. The raw user data is a private input of proof generation, and on-chain verification is carried out with the hash as one of the public inputs in `AnonAadhaarGroth16Verifier.verifyProof()`.
+Banganoir Wallet authenticates transactions by verifying the zero-knowledge proof generated using unique and private user data, which is retrieved from Aadhaar's secure QR code. The hash of the user data is stored on smart contract and passed to `verifyPoof()` function as a public input. This ensures the verification can only succeed if the user provides the exact data matching the stored hash.
 
-Also, the function has another parameter called `signalHash`, the hash of `userOpHash`, passed as a commitment to help mitigate on-chain front-running. This can be seen as a form of transaction signature that provides security and integrity of transactions for the Banganoir Wallet.
+Additionally, the function includes a parameter called `signalHash`, the hash of `userOpHash`, passed as a commitment to prevent on-chain front-running. Essentially, it acts as a form of transaction signature, enhancing the security and integrity of transactions within the Banganoir Wallet.
 
 #### Docs:
-- [Anon Aadhaar Doc](https://github.com/anon-aadhaar/anon-aadhaar)  
+
+- [Anon Aadhaar Doc](https://github.com/anon-aadhaar/anon-aadhaar)
 
 ### ERC4337
 
 Banganoir Wallet integrates [Pimlico](pimlico.io)'s ts library called `permissionless.js` and bundler to create user operation and broadcast transactions to scroll the sepia network.
 
 #### Docs:
-- [EIP4337](https://eips.ethereum.org/EIPS/eip-4337)  
-- [Pimlico](https://docs.pimlico.io/)  
+
+- [EIP4337](https://eips.ethereum.org/EIPS/eip-4337)
+- [Pimlico](https://docs.pimlico.io/)
 
 ### NoirOTP
 
@@ -42,11 +45,12 @@ At an authentication, the user gets TOTP from the Authenticator app and enters i
 The proof is verified by NoirOTP contract where `timestep` as a public input is calculated with `block.timestamp` beforehand. In this approach, the functionality that websites perform in the conventional TOTP scheme can be emulated on-chain without storing the secret anywhere.
 
 #### Docs:
-- [Noir](https://noir-lang.org/docs/)  
-- [IPFS](docs.ipfs.io)  
-- [Pinata](https://docs.pinata.cloud/introduction)  
 
-## Contracts 
+- [Noir](https://noir-lang.org/docs/)
+- [IPFS](docs.ipfs.io)
+- [Pinata](https://docs.pinata.cloud/introduction)
+
+## Contracts
 
 Contracts below are deployed on Scroll Sepolia.
 
