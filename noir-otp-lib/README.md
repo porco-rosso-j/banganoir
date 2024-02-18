@@ -3,12 +3,12 @@
 still not published. WIP...
 
 ```shell
-yarn add "@porco/noir-otp-lib @otplib/preset-browser "@noir-lang/backend_barretenberg @noir-lang/noir_js
+yarn add @porco/noir-otp-lib @otplib/preset-browser @noir-lang/backend_barretenberg @noir-lang/noir_js
 ```
 
 instantiate
 
-```shell
+```javascript
 import { BarretenbergBackend, CompiledCircuit } from "@noir-lang/backend_barretenberg";
 import { Noir } from "@noir-lang/noir_js";
 import otpCircuit from "./artifacts/circuits/otp.json";
