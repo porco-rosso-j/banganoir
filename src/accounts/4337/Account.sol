@@ -28,15 +28,14 @@ contract Account is
         _;
     }
 
-
     // modifier validateTimestep() {
     //     require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
     //     _;
     // }
 
     function _validateTimeValidity() internal {
-         require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
-         // require(isLessThan3HoursAgo(), "NOT_LESS_THAN_3H_AGO");
+        require(getTimestep() == currentTimestep, "INVALID_TIMESTEP");
+        // require(isLessThan3HoursAgo(), "NOT_LESS_THAN_3H_AGO");
     }
 
     function _onlySelf() internal view {
@@ -62,7 +61,7 @@ contract Account is
     }
 
     function initialize(
-        address _anonAadhaarVerifierAddr, 
+        address _anonAadhaarVerifierAddr,
         uint _userDataHash,
         address _noirOTPVerifier,
         bytes32 _merkleRoot,
@@ -108,7 +107,7 @@ contract Account is
         bytes[] calldata func
     ) external {
         _requireFromEntryPointOrOwner();
-         _validateTimeValidity();
+        _validateTimeValidity();
         require(dest.length == func.length, "wrong array lengths");
         for (uint256 i = 0; i < dest.length; i++) {
             _call(dest[i], 0, func[i]);
@@ -127,16 +126,29 @@ contract Account is
         UserOperation calldata userOp,
         bytes32 userOpHash
     ) internal virtual override returns (uint256 validationData) {
-        (uint identityNullifier, uint timestamp, uint signal, uint[8] memory groth16Proof, bytes memory proof, bytes32 nullifierHash, uint timestep) = abi.decode(
-            userOp.signature,
-            (uint, uint, uint, uint[8], bytes, bytes32, uint)
-        );
+        (
+            uint identityNullifier,
+            uint timestamp,
+            uint signal,
+            uint[8] memory groth16Proof,
+            bytes memory proof,
+            bytes32 nullifierHash,
+            uint timestep
+        ) = abi.decode(
+                userOp.signature,
+                (uint, uint, uint, uint[8], bytes, bytes32, uint)
+            );
 
+        require(uint(userOpHash) == signal, "INVALID_SIGNAL");
 
         if (
-            !verifyAnonAadhaar(identityNullifier, timestamp, signal, groth16Proof) || 
-            !verifyOTP(proof, nullifierHash, timestep)) 
-        return SIG_VALIDATION_FAILED;
+            !verifyAnonAadhaar(
+                identityNullifier,
+                timestamp,
+                signal,
+                groth16Proof
+            ) || !verifyOTP(proof, nullifierHash, timestep)
+        ) return SIG_VALIDATION_FAILED;
         return 0;
     }
 
@@ -150,8 +162,8 @@ contract Account is
     //     );
 
     //     if (
-    //         !verifyAnonAadhaar(identityNullifier, timestamp, signal, groth16Proof) || 
-    //         !verifyOTP(proof, nullifierHash, timestep)) 
+    //         !verifyAnonAadhaar(identityNullifier, timestamp, signal, groth16Proof) ||
+    //         !verifyOTP(proof, nullifierHash, timestep))
     //     return SIG_VALIDATION_FAILED;
     //     return 0;
     // }

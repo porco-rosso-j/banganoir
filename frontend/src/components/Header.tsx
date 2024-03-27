@@ -15,7 +15,7 @@ export default function Header() {
 			</Text>
 			<Group mt={5}>
 				<Anchor
-					href="https://github.com/porco-rosso-j/noir-otp"
+					href="https://github.com/porco-rosso-j/banganoir"
 					target="_blank"
 					rel="noreferrer"
 					mt={8}

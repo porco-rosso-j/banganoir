@@ -19,9 +19,28 @@ contract NoirOTP {
         uint16 _step,
         string memory _ipfsHash
     ) internal {
+        require(_verifier != address(0), "INVALID_VERIFIER_ADDRESS");
+        require(_merkleRoot != bytes32(0), "INVALID_ROOT");
+        require(_step != 0, "INVALID_STEP");
+        require(
+            keccak256(abi.encodePacked(_ipfsHash)) !=
+                keccak256(abi.encodePacked("")),
+            "INVALID_IPFS_HASH"
+        );
         verifier = _verifier;
         merkleRoot = _merkleRoot;
         step = _step;
+        ipfsHash = _ipfsHash;
+    }
+
+    function _updateRootAndIPFSHash(bytes32 _merkleRoot, string memory _ipfsHash) internal {
+        require(_merkleRoot != bytes32(0), "INVALID_ROOT");
+        require(
+            keccak256(abi.encodePacked(_ipfsHash)) !=
+                keccak256(abi.encodePacked("")),
+            "INVALID_IPFS_HASH"
+        );
+        merkleRoot = _merkleRoot;
         ipfsHash = _ipfsHash;
     }
 
